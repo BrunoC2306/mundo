@@ -1,0 +1,22 @@
+ATUALIZAÇÃO: VIDA/ESFORÇO EDITÁVEIS + PERÍCIAS À DIREITA
+
+1. No seu projeto, substitua estes 3 arquivos, mantendo exatamente os caminhos:
+   src/components/SheetRenderer.jsx
+   src/pages/SheetView.jsx
+   src/styles/index.css
+
+2. Para que qualquer visitante consiga salvar alterações de vida e esforço de fichas públicas,
+   abra o Supabase do projeto > SQL Editor > New query.
+   Copie e execute todo o conteúdo de:
+   supabase/permitir-editar-recursos-publicos.sql
+
+   Essa função só permite alterar vida atual e esforço atual de fichas públicas. Não libera a
+   edição de atributos, perícias, habilidades, imagem ou demais dados.
+
+3. Envie os 3 arquivos ao GitHub nos mesmos caminhos e aguarde a Vercel publicar.
+4. Atualize a ficha com Ctrl+F5. Vida e pontos de esforço terão botões +/− e campo numérico;
+   as mudanças são salvas automaticamente. As perícias aparecem numa coluna à direita em telas
+   grandes e abaixo do restante da ficha em telas pequenas.
+
+OBSERVAÇÃO: não apague nem recrie as fichas existentes. A SQL apenas cria/atualiza uma função
+no Supabase; ela não apaga dados.

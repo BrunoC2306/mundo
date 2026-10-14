@@ -79,8 +79,8 @@ export default function AbilityTreePage() {
   const moveDrag = (e) => {
     const d = dragRef.current
     if (!d) return
-    const x = Math.max(12, d.x + e.clientX - d.startX)
-    const y = Math.max(12, d.y + e.clientY - d.startY)
+    const x = Math.max(12, d.x + (e.clientX - d.startX) / zoom)
+    const y = Math.max(12, d.y + (e.clientY - d.startY) / zoom)
     setAbilities((items) => items.map((a) => a.id === d.id ? { ...a, x, y } : a))
   }
   const endDrag = async () => {
@@ -113,6 +113,12 @@ export default function AbilityTreePage() {
   const selectedCharacter = characters.find((c) => c.id === selected)
   const ownedIds = (selectedCharacter?.sheet?.ataques || []).map((a) => a.treeAbilityId).filter(Boolean)
   const nodesById = Object.fromEntries(abilities.map((a) => [a.id, a]))
+  // Mantém os nós em coordenadas estáveis e reduz o zoom conforme a árvore cresce.
+  const worldWidth = Math.max(1500, ...abilities.map((a) => a.x + 250))
+  const worldHeight = Math.max(700, ...abilities.map((a) => a.y + 200))
+  const zoom = Math.max(0.35, Math.min(1, 1700 / worldWidth, 900 / worldHeight))
+  const canvasWidth = Math.max(900, worldWidth * zoom)
+  const canvasHeight = Math.max(700, worldHeight * zoom)
 
   return (
     <section className="page ability-page">
@@ -121,10 +127,10 @@ export default function AbilityTreePage() {
         <div className="ability-toolbar">
           <div className="ability-toolbar__hero"><label htmlFor="ability-hero">Árvore do herói</label><select id="ability-hero" value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Selecione um herói</option>{characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           {selectedCharacter && <div className="ability-pd"><Coins size={19} /><span><strong>{selectedCharacter.pd}</strong> PD disponíveis</span></div>}
-          <span className="ability-hint"><Grip size={15} /> Arraste pelo cabeçalho para reorganizar</span>
+          <span className="ability-hint"><Grip size={15} /> Arraste pelo cabeçalho para reorganizar · Zoom automático: {Math.round(zoom * 100)}%</span>
         </div>
         {!selected ? <div className="ability-empty"><GitBranch size={40} /><h2>Escolha um herói</h2><p>Cada personagem tem uma árvore independente. Selecione um herói para visualizar ou criar suas habilidades.</p></div> : loading ? <div className="state">Carregando árvore de {selectedCharacter?.name || 'herói'}…</div> : abilities.length === 0 ? <div className="ability-empty"><Swords size={40} /><h2>Esta árvore ainda não tem habilidades</h2><p>Crie o primeiro nó para este herói. As habilidades de outros personagens não aparecem nesta árvore.</p><button className="btn btn--primary" onClick={() => setShowCreate(true)}><Plus size={16} /> Criar primeira habilidade</button></div> : (
-          <div className="ability-canvas-wrap"><div className="ability-canvas" ref={canvasRef} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+          <div className="ability-canvas-wrap"><div className="ability-canvas" style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}><div className="ability-world" ref={canvasRef} style={{ width: `${worldWidth}px`, height: `${worldHeight}px`, transform: `scale(${zoom})` }} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
             <svg className="ability-lines" aria-hidden="true"><defs><pattern id="ability-grid" width="30" height="30" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1.1" fill="currentColor" opacity=".2" /></pattern><linearGradient id="ability-line-gradient"><stop offset="0%" stopColor="#4c8bd9"/><stop offset="100%" stopColor="#58d9c3"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#ability-grid)" />{abilities.filter((a) => a.parent_id && nodesById[a.parent_id]).map((a) => { const p = nodesById[a.parent_id]; return <path key={`${p.id}-${a.id}`} d={`M ${p.x + 220} ${p.y + 85} C ${p.x + 255} ${p.y + 85}, ${a.x - 35} ${a.y + 85}, ${a.x} ${a.y + 85}`} stroke="url(#ability-line-gradient)" /> })}</svg>
             {abilities.map((a) => {
               const owned = ownedIds.includes(a.id)
@@ -136,7 +142,7 @@ export default function AbilityTreePage() {
                 <div className="ability-node__footer"><strong><Coins size={15} /> {a.cost} PD</strong><button className="btn btn--primary btn--small" disabled={!selectedCharacter || buying === a.id || owned || Boolean(locked)} onClick={() => purchase(a)}>{owned ? 'Adquirida' : locked ? 'Bloqueada' : buying === a.id ? 'Comprando…' : 'Comprar'}</button></div>
               </article>
             })}
-          </div></div>
+          </div></div></div>
         )}
         <p className="ability-footnote"><ShieldAlert size={15} /> Cada árvore pertence a um único herói. Ao comprar, os PD são descontados e a habilidade é registrada na seção <strong>Ataques</strong> da ficha, com dano 0 e perícia Luta como padrões.</p>
       </div>

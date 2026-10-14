@@ -1,0 +1,15 @@
+MUNDO DE BATALHA — CORREÇÃO DA ÁRVORE DE HABILIDADES
+
+O que foi alterado:
+1. Ao criar habilidades que usam outra habilidade como pré-requisito, as coordenadas X/Y são arredondadas para números inteiros antes de enviar ao Supabase.
+2. Ao arrastar um nó, o site agora atualiza também as coordenadas locais para os valores inteiros que foram salvos. Isso impede que coordenadas decimais se propaguem para novos nós.
+3. Quando o mestre está autenticado, pode clicar no conteúdo de uma habilidade ou no botão Editar para alterar nome, descrição, custo em PD, dano, perícia e pré-requisito.
+4. Os jogadores continuam podendo visualizar/comprar habilidades normalmente; os controles de edição só aparecem para o mestre.
+
+Como aplicar:
+- Substitua os arquivos do projeto pelos arquivos deste ZIP, ou copie os arquivos mantendo a mesma estrutura.
+- Não há SQL novo incluído nesta correção.
+- A edição usa UPDATE na tabela public.ability_tree_nodes. Se o Supabase bloquear a gravação, a tabela precisa já ter uma política RLS que permita UPDATE somente ao mestre (is_master()). Não desative o RLS nem libere UPDATE para anon/public.
+
+Observação:
+O projeto não foi possível compilar nesta sessão porque a instalação das dependências excedeu o tempo disponível. Revise o deploy da Vercel após enviar os arquivos e confira os logs de build.

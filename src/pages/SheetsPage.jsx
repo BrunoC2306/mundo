@@ -4,22 +4,20 @@ import { Download, Loader2, Plus, Search, Upload } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import CharacterCard from '../components/CharacterCard.jsx'
 import ImportDialog from '../components/ImportDialog.jsx'
+import CharacterEditor from '../components/CharacterEditor.jsx'
 import { useData } from '../state/DataContext.jsx'
 import { useUi } from '../ui/UiProvider.jsx'
 import { exportBundle } from '../lib/characters.js'
 import { friendlyError } from '../lib/errors.js'
 import { normText } from '../lib/text.js'
-import { useMaster } from '../state/MasterContext.jsx'
-import CharacterEditor from '../components/CharacterEditor.jsx'
 
 export default function SheetsPage() {
   const { characters, status, error, refresh } = useData()
   const { toast } = useUi()
-  const { isMaster } = useMaster()
-  const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [importing, setImporting] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // A galeria pública NUNCA mostra fichas privadas, nem para o mestre.
@@ -52,7 +50,9 @@ export default function SheetsPage() {
               <Search size={16} />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar personagem" aria-label="Buscar personagem" />
             </label>
-            {isMaster && <button className="btn btn--primary" onClick={() => setCreating(true)}><Plus size={16} /> Criar ficha</button>}
+            <button className="btn btn--primary" onClick={() => setCreating(true)}>
+              <Plus size={16} /> Criar ficha
+            </button>
             <button className="btn" onClick={backup} disabled={busy || total === 0} title="Baixa todas as fichas públicas em um arquivo">
               <Download size={16} /> Backup
             </button>
@@ -82,9 +82,14 @@ export default function SheetsPage() {
           <div className="state">
             <h2 className="state__title">Nenhuma ficha ainda</h2>
             <p className="state__text">Importe um arquivo .json para adicionar o primeiro personagem à galeria.</p>
-            <button className="btn btn--primary" onClick={() => setImporting(true)}>
-              <Upload size={16} /> Importar ficha
-            </button>
+            <div className="row-gap">
+              <button className="btn btn--primary" onClick={() => setCreating(true)}>
+                <Plus size={16} /> Criar ficha
+              </button>
+              <button className="btn" onClick={() => setImporting(true)}>
+                <Upload size={16} /> Importar ficha
+              </button>
+            </div>
           </div>
         )}
         {status === 'ready' && total > 0 && list.length === 0 && <p className="empty-note">Nenhum personagem com esse nome.</p>}
@@ -97,7 +102,17 @@ export default function SheetsPage() {
         )}
       </div>
       {importing && <ImportDialog target="public" onClose={() => setImporting(false)} />}
-      {creating && <CharacterEditor row={null} onClose={() => setCreating(false)} onSaved={() => { setCreating(false); refresh() }} />}
+      {creating && (
+        <CharacterEditor
+          row={null}
+          onClose={() => setCreating(false)}
+          onSaved={(res) => {
+            setCreating(false)
+            refresh()
+            if (res?.slug) navigate(`/fichas/${res.slug}`)
+          }}
+        />
+      )}
     </section>
   )
 }

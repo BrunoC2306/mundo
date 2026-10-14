@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Loader2, Search, Upload } from 'lucide-react'
+import { Download, Loader2, Plus, Search, Upload } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import CharacterCard from '../components/CharacterCard.jsx'
 import ImportDialog from '../components/ImportDialog.jsx'
@@ -9,10 +9,14 @@ import { useUi } from '../ui/UiProvider.jsx'
 import { exportBundle } from '../lib/characters.js'
 import { friendlyError } from '../lib/errors.js'
 import { normText } from '../lib/text.js'
+import { useMaster } from '../state/MasterContext.jsx'
+import CharacterEditor from '../components/CharacterEditor.jsx'
 
 export default function SheetsPage() {
   const { characters, status, error, refresh } = useData()
   const { toast } = useUi()
+  const { isMaster } = useMaster()
+  const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [importing, setImporting] = useState(false)
@@ -48,6 +52,7 @@ export default function SheetsPage() {
               <Search size={16} />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar personagem" aria-label="Buscar personagem" />
             </label>
+            {isMaster && <button className="btn btn--primary" onClick={() => setCreating(true)}><Plus size={16} /> Criar ficha</button>}
             <button className="btn" onClick={backup} disabled={busy || total === 0} title="Baixa todas as fichas públicas em um arquivo">
               <Download size={16} /> Backup
             </button>
@@ -92,6 +97,7 @@ export default function SheetsPage() {
         )}
       </div>
       {importing && <ImportDialog target="public" onClose={() => setImporting(false)} />}
+      {creating && <CharacterEditor row={null} onClose={() => setCreating(false)} onSaved={() => { setCreating(false); refresh() }} />}
     </section>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Download, Loader2, Pencil } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
@@ -9,8 +9,6 @@ import { useData } from '../state/DataContext.jsx'
 import { useMaster } from '../state/MasterContext.jsx'
 import { exportOne, fetchFullBySlug, fetchPdLog } from '../lib/characters.js'
 import { friendlyError } from '../lib/errors.js'
-import { supabase } from '../lib/supabase.js'
-import { useUi } from '../ui/UiProvider.jsx'
 import { initialsOf, timeOf } from '../lib/text.js'
 
 export default function SheetView() {
@@ -18,7 +16,6 @@ export default function SheetView() {
   const navigate = useNavigate()
   const location = useLocation()
   const { characters, refresh } = useData()
-  const { toast } = useUi()
   const { isMaster } = useMaster()
   const entry = characters.find((c) => c.slug === slug)
 
@@ -28,10 +25,6 @@ export default function SheetView() {
   const [log, setLog] = useState([])
   const [editing, setEditing] = useState(false)
   const [broken, setBroken] = useState(false)
-  const [savingResources, setSavingResources] = useState(false)
-  const resourceTimer = useRef(null)
-  const latestSheet = useRef(null)
-  const saveInFlight = useRef(false)
 
   // Recarrega o conteúdo completo quando a versão da ficha muda (outra pessoa editou).
   useEffect(() => {
@@ -62,60 +55,6 @@ export default function SheetView() {
       alive = false
     }
   }, [full?.id, entry?.pd])
-
-  useEffect(() => () => clearTimeout(resourceTimer.current), [])
-
-  const changeResource = (key, value) => {
-    if (!full) return
-    const currentResources = full.sheet?.recursos ?? {}
-    const maxKey = key === 'vidaAtual' ? 'vidaMaxima' : 'esforcoMaximo'
-    const requested = Math.max(0, Number(value) || 0)
-    const maximum = Number(currentResources[maxKey] ?? 0)
-    const safeValue = maximum > 0 ? Math.min(requested, maximum) : requested
-    const nextSheet = {
-      ...(full.sheet ?? {}),
-      recursos: { ...currentResources, [key]: safeValue },
-    }
-    latestSheet.current = nextSheet
-    setFull((current) => current ? { ...current, sheet: nextSheet } : current)
-    setSavingResources(true)
-    clearTimeout(resourceTimer.current)
-    resourceTimer.current = setTimeout(async () => {
-      if (saveInFlight.current) {
-        resourceTimer.current = setTimeout(() => changeResourceSave(), 350)
-        return
-      }
-      await changeResourceSave()
-    }, 650)
-  }
-
-  const changeResourceSave = async () => {
-    if (!full?.id || !latestSheet.current) return
-    saveInFlight.current = true
-    const sheetToSave = latestSheet.current
-    const snapshot = JSON.stringify(sheetToSave)
-    try {
-      const { data, error: saveError } = await supabase.rpc('update_character_resources', {
-        p_character: full.id,
-        p_vida_atual: Math.max(0, Number(sheetToSave.recursos?.vidaAtual ?? 0)),
-        p_esforco_atual: Math.max(0, Number(sheetToSave.recursos?.esforcoAtual ?? 0)),
-      })
-      if (saveError) throw saveError
-      if (data !== true) throw new Error('FORBIDDEN')
-      if (latestSheet.current && JSON.stringify(latestSheet.current) === snapshot) setSavingResources(false)
-      refresh()
-    } catch (e) {
-      setSavingResources(false)
-      toast(`Não foi possível salvar a alteração. ${friendlyError(e)} Se isso for erro de permissão, será necessário liberar a atualização de vida/esforço no Supabase.`, 'error')
-      // Keep the optimistic value on screen so it is not lost while diagnosing permissions.
-    } finally {
-      saveInFlight.current = false
-      if (latestSheet.current && JSON.stringify(latestSheet.current) !== snapshot) {
-        clearTimeout(resourceTimer.current)
-        resourceTimer.current = setTimeout(changeResourceSave, 250)
-      }
-    }
-  }
 
   const goBack = () => (location.key !== 'default' ? navigate(-1) : navigate(isMaster && full && !full.is_public ? '/mestre' : '/fichas'))
 
@@ -189,7 +128,7 @@ export default function SheetView() {
             )}
           </aside>
           <div className="sheet__main">
-            <SheetRenderer data={full.sheet} onResourceChange={changeResource} savingResources={savingResources} />
+            <SheetRenderer data={full.sheet} />
           </div>
         </div>
       </div>

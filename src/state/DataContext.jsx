@@ -5,7 +5,7 @@ import { useMaster } from './MasterContext.jsx'
 import { useUi } from '../ui/UiProvider.jsx'
 
 // A lista leve não traz o conteúdo (sheet) das fichas: é barata de baixar a cada mudança.
-const LIGHT = 'id,slug,name,summary,image_url,category,pd,is_public,version,updated_at'
+const LIGHT = 'id,slug,name,summary,image_url,category,pd,is_public,player_username,version,updated_at'
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
 const DataContext = createContext(null)
 

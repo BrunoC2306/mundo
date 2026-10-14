@@ -106,8 +106,8 @@ export default function MasterDashboard() {
     const busy = busyId === c.id
     return (
       <>
-        <button className="btn btn--sm master-edit-button" onClick={() => openEditor(c)} disabled={busy} title="Editar ficha" aria-label={`Editar ${c.name}`}>
-          {busy ? <Loader2 className="spin" size={15} /> : <Pencil size={15} />} <span>Editar ficha</span>
+        <button className="btn btn--icon btn--sm" onClick={() => openEditor(c)} disabled={busy} title="Editar" aria-label={`Editar ${c.name}`}>
+          {busy ? <Loader2 className="spin" size={15} /> : <Pencil size={15} />}
         </button>
         <button className="btn btn--icon btn--sm" onClick={() => doExport(c)} disabled={busy} title="Exportar JSON" aria-label={`Exportar ${c.name}`}>
           <Download size={15} />

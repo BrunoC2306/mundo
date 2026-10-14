@@ -1,0 +1,16 @@
+MUNDO DE BATALHA — vínculo de ficha com jogador
+
+O que esta atualização faz:
+- Adiciona o campo “Usuário responsável” ao formulário de criar/editar ficha.
+- Permite atribuir, por exemplo, a ficha Wolverine ao usuário “wolverine”.
+- Permite deixar o campo vazio quando a ficha ainda não tem jogador.
+- Salva o vínculo na coluna characters.player_username.
+
+INSTALAÇÃO
+1. No Supabase, abra SQL Editor.
+2. Cole e execute o arquivo supabase/04_jogadores_fichas.sql.
+3. Copie os arquivos deste pacote para o projeto, mantendo os caminhos das pastas.
+4. Publique novamente pelo GitHub/Vercel.
+
+IMPORTANTE
+Este pacote implementa o vínculo da ficha com o nome do jogador. Ele ainda não cria as contas nem implementa o login por usuário/senha. Isso exige uma etapa complementar de autenticação; o campo de vínculo é a base para ligar a conta certa à ficha sem expor e-mails.

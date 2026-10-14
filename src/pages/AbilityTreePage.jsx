@@ -4,21 +4,19 @@ import { supabase } from '../lib/supabase.js'
 import PageHeader from '../components/PageHeader.jsx'
 import '../styles/ability-tree.css'
 import { useUi } from '../ui/UiProvider.jsx'
-import { useMaster } from '../state/MasterContext.jsx'
 
 const DEFAULT_SKILL = 'Luta'
 const cleanAbility = (row) => ({ ...row, damage: row.damage || '0', skill: row.skill || DEFAULT_SKILL, x: Number(row.x ?? 80), y: Number(row.y ?? 80) })
 
 export default function AbilityTreePage() {
   const { toast } = useUi()
-  const { isMaster } = useMaster()
   const [abilities, setAbilities] = useState([])
   const [characters, setCharacters] = useState([])
   const [selected, setSelected] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
-  const [editing, setEditing] = useState(null)
+  const [viewAbility, setViewAbility] = useState(null)
   const [form, setForm] = useState({ name: '', description: '', cost: '1', damage: '0', skill: 'Luta', parent_id: '' })
   const [buying, setBuying] = useState(null)
   const [drag, setDrag] = useState(null)
@@ -60,10 +58,8 @@ export default function AbilityTreePage() {
       character_id: selected, parent_id: form.parent_id || null, name,
       description: form.description.trim(), cost,
       damage: form.damage.trim() || '0', skill: form.skill.trim() || DEFAULT_SKILL,
-      // Coordenadas são inteiras no banco. Arredondar também evita propagar decimais
-      // quando uma habilidade arrastada serve de pré-requisito para outra.
-      x: Math.round(form.parent_id ? Math.max(80, (abilities.find((a) => a.id === form.parent_id)?.x || 80) + 280) : 90 + (abilities.length % 3) * 290),
-      y: Math.round(form.parent_id ? (abilities.find((a) => a.id === form.parent_id)?.y || 80) + 155 : 90 + Math.floor(abilities.length / 3) * 220),
+      x: form.parent_id ? Math.max(80, (abilities.find((a) => a.id === form.parent_id)?.x || 80) + 280) : 90 + (abilities.length % 3) * 290,
+      y: form.parent_id ? (abilities.find((a) => a.id === form.parent_id)?.y || 80) + 155 : 90 + Math.floor(abilities.length / 3) * 220,
     }
     const { data, error } = await supabase.from('ability_tree_nodes').insert(next).select('*').single()
     setSaving(false)
@@ -76,7 +72,6 @@ export default function AbilityTreePage() {
 
   const startDrag = (e, ability) => {
     if (e.target.closest('button, input, select, textarea, a')) return
-    if (!e.target.closest('.ability-node__grab')) return
     e.preventDefault()
     dragRef.current = { id: ability.id, startX: e.clientX, startY: e.clientY, x: ability.x, y: ability.y }
     setDrag(ability.id)
@@ -101,37 +96,7 @@ export default function AbilityTreePage() {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return
     const { error } = await supabase.from('ability_tree_nodes').update({ x: Math.round(x), y: Math.round(y) }).eq('id', d.id)
     if (error) toast('Não foi possível salvar a posição do nó. Confira as permissões da tabela no Supabase.', 'error')
-    else setAbilities((items) => items.map((a) => a.id === d.id ? { ...a, x: Math.round(x), y: Math.round(y) } : a))
   }
-
-  const openEdit = (ability) => {
-    if (!isMaster) return
-    setEditing(ability)
-    setForm({ name: ability.name || '', description: ability.description || '', cost: String(ability.cost ?? 1), damage: ability.damage || '0', skill: ability.skill || DEFAULT_SKILL, parent_id: ability.parent_id || '' })
-  }
-
-  const updateAbility = async (e) => {
-    e.preventDefault()
-    if (!isMaster || !editing) return
-    const name = form.name.trim()
-    const cost = Number(form.cost)
-    if (!name || !Number.isInteger(cost) || cost < 0 || cost > 10000) {
-      toast('Informe um nome e um preço em PD válido (número inteiro de 0 a 10000).', 'error')
-      return
-    }
-    if (form.parent_id === editing.id) { toast('Uma habilidade não pode ser pré-requisito dela mesma.', 'error'); return }
-    if (form.parent_id && !abilities.some((a) => a.id === form.parent_id)) { toast('A habilidade anterior selecionada não pertence a esta árvore.', 'error'); return }
-    setSaving(true)
-    const changes = { name, description: form.description.trim(), cost, damage: form.damage.trim() || '0', skill: form.skill.trim() || DEFAULT_SKILL, parent_id: form.parent_id || null }
-    const { data, error } = await supabase.from('ability_tree_nodes').update(changes).eq('id', editing.id).select('*').single()
-    setSaving(false)
-    if (error) { toast(`Não foi possível editar a habilidade: ${error.message}`, 'error'); return }
-    setAbilities((items) => items.map((a) => a.id === editing.id ? cleanAbility(data) : a))
-    setEditing(null)
-    toast('Habilidade atualizada.', 'success')
-  }
-
-  const closeAbilityModal = () => { setShowCreate(false); setEditing(null) }
 
   const purchase = async (ability) => {
     if (!selected) { toast('Selecione um herói primeiro.', 'error'); return }
@@ -163,7 +128,7 @@ export default function AbilityTreePage() {
         <div className="ability-toolbar">
           <div className="ability-toolbar__hero"><label htmlFor="ability-hero">Árvore do herói</label><select id="ability-hero" value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Selecione um herói</option>{characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           {selectedCharacter && <div className="ability-pd"><Coins size={19} /><span><strong>{selectedCharacter.pd}</strong> PD disponíveis</span></div>}
-          <span className="ability-hint"><Grip size={15} /> Arraste pelo cabeçalho para reorganizar · Zoom automático: {Math.round(zoom * 100)}%</span>
+          <span className="ability-hint"><Grip size={15} /> Clique em uma habilidade para ver detalhes · Arraste pelo cabeçalho para reorganizar · Zoom automático: {Math.round(zoom * 100)}%</span>
         </div>
         {!selected ? <div className="ability-empty"><GitBranch size={40} /><h2>Escolha um herói</h2><p>Cada personagem tem uma árvore independente. Selecione um herói para visualizar ou criar suas habilidades.</p></div> : loading ? <div className="state">Carregando árvore de {selectedCharacter?.name || 'herói'}…</div> : abilities.length === 0 ? <div className="ability-empty"><Swords size={40} /><h2>Esta árvore ainda não tem habilidades</h2><p>Crie o primeiro nó para este herói. As habilidades de outros personagens não aparecem nesta árvore.</p><button className="btn btn--primary" onClick={() => setShowCreate(true)}><Plus size={16} /> Criar primeira habilidade</button></div> : (
           <div className="ability-canvas-wrap"><div className="ability-canvas" style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}><div className="ability-world" ref={canvasRef} style={{ width: `${worldWidth}px`, height: `${worldHeight}px`, transform: `scale(${zoom})` }} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
@@ -172,24 +137,25 @@ export default function AbilityTreePage() {
               const owned = ownedIds.includes(a.id)
               const prerequisite = a.parent_id ? nodesById[a.parent_id] : null
               const locked = prerequisite && !ownedIds.includes(prerequisite.id)
-              return <article key={a.id} data-ability-id={a.id} className={`ability-node ${drag === a.id ? 'ability-node--dragging' : ''} ${owned ? 'ability-node--owned' : ''} ${locked ? 'ability-node--locked' : ''} ${isMaster ? 'ability-node--editable' : ''}`} style={{ left: `${a.x}px`, top: `${a.y}px` }} onPointerDown={(e) => startDrag(e, a)} onClick={(e) => { if (isMaster && !e.target.closest('button') && !e.target.closest('.ability-node__grab')) openEdit(a) }}>
+              return <article key={a.id} data-ability-id={a.id} className={`ability-node ability-node--clickable ${drag === a.id ? 'ability-node--dragging' : ''} ${owned ? 'ability-node--owned' : ''} ${locked ? 'ability-node--locked' : ''}`} style={{ left: `${a.x}px`, top: `${a.y}px` }} onPointerDown={(e) => startDrag(e, a)} onClick={(e) => { if (e.target.closest('button')) return; setViewAbility(a) }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewAbility(a) } }} aria-label={`Ver descrição da habilidade ${a.name}`}>
                 <div className="ability-node__grab"><Grip size={15} /><span>{owned ? 'HABILIDADE ADQUIRIDA' : locked ? 'CAMINHO BLOQUEADO' : 'HABILIDADE'}</span>{locked && <LockKeyhole size={13} />}</div>
                 <div className="ability-node__content"><h3>{a.name}</h3>{a.description && <p>{a.description}</p>}<div className="ability-node__stats"><span><Swords size={14} /> Dano: {a.damage || '0'}</span><span>Perícia: {a.skill || DEFAULT_SKILL}</span>{prerequisite && <span><GitBranch size={13} /> Requer: {prerequisite.name}</span>}</div></div>
-                <div className="ability-node__footer"><strong><Coins size={15} /> {a.cost} PD</strong>{isMaster && <button type="button" className="btn btn--small" onClick={() => openEdit(a)}>Editar</button>}<button className="btn btn--primary btn--small" disabled={!selectedCharacter || buying === a.id || owned || Boolean(locked)} onClick={() => purchase(a)}>{owned ? 'Adquirida' : locked ? 'Bloqueada' : buying === a.id ? 'Comprando…' : 'Comprar'}</button></div>
+                <div className="ability-node__footer"><strong><Coins size={15} /> {a.cost} PD</strong><button className="btn btn--primary btn--small" disabled={!selectedCharacter || buying === a.id || owned || Boolean(locked)} onClick={() => purchase(a)}>{owned ? 'Adquirida' : locked ? 'Bloqueada' : buying === a.id ? 'Comprando…' : 'Comprar'}</button></div>
               </article>
             })}
           </div></div></div>
         )}
         <p className="ability-footnote"><ShieldAlert size={15} /> Cada árvore pertence a um único herói. Ao comprar, os PD são descontados e a habilidade é registrada na seção <strong>Ataques</strong> da ficha, com dano 0 e perícia Luta como padrões.</p>
       </div>
-      {(showCreate || editing) && <div className="ability-modal-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && closeAbilityModal()}><form className="ability-modal" onSubmit={editing ? updateAbility : createAbility}><div className="ability-modal__head"><div><span>ÁRVORE DE {selectedCharacter?.name?.toUpperCase() || 'HERÓI'}</span><h2>{editing ? 'Editar habilidade' : 'Nova habilidade'}</h2></div><button type="button" className="icon-btn" onClick={closeAbilityModal} aria-label="Fechar"><X size={20} /></button></div>
+      {viewAbility && <div className="ability-modal-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && setViewAbility(null)}><div className="ability-modal" role="dialog" aria-modal="true" aria-labelledby="ability-detail-title"><div className="ability-modal__head"><div><span>HABILIDADE DE {selectedCharacter?.name?.toUpperCase() || 'HERÓI'}</span><h2 id="ability-detail-title">{viewAbility.name}</h2></div><button type="button" className="icon-btn" onClick={() => setViewAbility(null)} aria-label="Fechar"><X size={20} /></button></div><div className="ability-detail"><p>{viewAbility.description?.trim() || 'Esta habilidade ainda não tem descrição.'}</p><div className="ability-node__stats"><span><Swords size={14} /> Dano: {viewAbility.damage || '0'}</span><span>Perícia: {viewAbility.skill || DEFAULT_SKILL}</span><span><Coins size={14} /> Custo: {viewAbility.cost} PD</span>{viewAbility.parent_id && nodesById[viewAbility.parent_id] && <span><GitBranch size={14} /> Requer: {nodesById[viewAbility.parent_id].name}</span>}</div></div><div className="ability-modal__actions"><button type="button" className="btn" onClick={() => setViewAbility(null)}>Fechar</button></div></div></div>}
+      {showCreate && <div className="ability-modal-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && setShowCreate(false)}><form className="ability-modal" onSubmit={createAbility}><div className="ability-modal__head"><div><span>ÁRVORE DE {selectedCharacter?.name?.toUpperCase() || 'HERÓI'}</span><h2>Nova habilidade</h2></div><button type="button" className="icon-btn" onClick={() => setShowCreate(false)} aria-label="Fechar"><X size={20} /></button></div>
         <label>Nome da habilidade<input autoFocus maxLength={120} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Rajada de energia" /></label>
         <label>Descrição<textarea rows={3} maxLength={1200} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Explique o efeito da habilidade…" /></label>
         <div className="ability-form-row"><label>Preço em PD<input type="number" min="0" max="10000" step="1" required value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} /></label><label>Dano<input value={form.damage} onChange={(e) => setForm({ ...form, damage: e.target.value })} placeholder="0" /></label></div>
         <label>Perícia<select value={form.skill} onChange={(e) => setForm({ ...form, skill: e.target.value })}><option>Luta</option><option>Pontaria</option><option>Atletismo</option><option>Ocultismo</option><option>Fortitude</option><option>Reflexos</option><option>Percepção</option><option>Iniciativa</option><option>Enganação</option><option>Intimidação</option><option>Diplomacia</option><option>Medicina</option></select></label>
         <label>Habilidade anterior (opcional)<select value={form.parent_id} onChange={(e) => setForm({ ...form, parent_id: e.target.value })}><option value="">Nenhuma — início de caminho</option>{abilities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
         <p className="ability-form-note">Escolha uma habilidade anterior para criar uma conexão e exigir esse caminho antes da compra. Se dano ou perícia ficarem vazios, serão usados 0 e Luta.</p>
-        <div className="ability-modal__actions"><button type="button" className="btn" onClick={closeAbilityModal}>Cancelar</button><button type="submit" className="btn btn--primary" disabled={saving}>{saving ? 'Salvando…' : editing ? 'Salvar alterações' : 'Adicionar à árvore'}</button></div>
+        <div className="ability-modal__actions"><button type="button" className="btn" onClick={() => setShowCreate(false)}>Cancelar</button><button type="submit" className="btn btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Adicionar à árvore'}</button></div>
       </form></div>}
     </section>
   )

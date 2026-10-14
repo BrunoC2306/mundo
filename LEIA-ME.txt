@@ -1,13 +1,13 @@
-CORREÇÃO: FORMULÁRIO VISUAL DE CRIAÇÃO DE FICHAS
+AJUSTE DE ESPAÇO DA FICHA — MUNDO DE BATALHA
 
-Arquivo incluído:
-src/components/CharacterEditor.jsx
+Este ZIP contém somente src/styles/index.css.
 
-Como aplicar:
-1. Extraia este ZIP.
-2. No seu projeto, abra src/components/.
-3. Substitua o CharacterEditor.jsx pelo arquivo deste pacote.
-4. Envie somente esse arquivo ao GitHub, mantendo exatamente o mesmo caminho.
-5. Aguarde a Vercel publicar e teste em janela anônima ou com Ctrl+F5.
+O ajuste é apenas de layout: reduz a largura da coluna do retrato para 140 px em telas grandes, deixando mais espaço horizontal para dados pessoais, dados gerais e atributos. Em telas médias, a coluna fica em 130 px e depois 120 px. Em telas pequenas, mantém o layout compacto já existente.
 
-O campo de JSON foi removido da tela. Os dados principais são preenchidos por campos visuais: nome, categoria, visibilidade, imagem, origem, classe, atributos, vida, esforço, defesas, perícias, ataques, habilidades e descrição. Campos extras já existentes em fichas antigas são preservados internamente ao salvar.
+O restante do estilo é mantido; não há imagem de pré-visualização ou mudança de tema.
+
+INSTALAÇÃO
+1. Extraia o ZIP.
+2. Substitua o arquivo src/styles/index.css do seu projeto por este arquivo, mantendo exatamente o caminho.
+3. Envie o arquivo para o GitHub e aguarde a Vercel publicar.
+4. Atualize o site com Ctrl+F5.

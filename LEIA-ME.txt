@@ -1,0 +1,13 @@
+CORREÇÃO: FORMULÁRIO VISUAL DE CRIAÇÃO DE FICHAS
+
+Arquivo incluído:
+src/components/CharacterEditor.jsx
+
+Como aplicar:
+1. Extraia este ZIP.
+2. No seu projeto, abra src/components/.
+3. Substitua o CharacterEditor.jsx pelo arquivo deste pacote.
+4. Envie somente esse arquivo ao GitHub, mantendo exatamente o mesmo caminho.
+5. Aguarde a Vercel publicar e teste em janela anônima ou com Ctrl+F5.
+
+O campo de JSON foi removido da tela. Os dados principais são preenchidos por campos visuais: nome, categoria, visibilidade, imagem, origem, classe, atributos, vida, esforço, defesas, perícias, ataques, habilidades e descrição. Campos extras já existentes em fichas antigas são preservados internamente ao salvar.

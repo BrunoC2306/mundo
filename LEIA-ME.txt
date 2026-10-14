@@ -1,12 +1,15 @@
-ATUALIZAÇÃO — layout de Vida/Esforço e edição de fichas
+MUNDO DE BATALHA — AJUSTE DE FICHA
 
-1. No GitHub, substitua src/styles/index.css pelo arquivo desta pasta.
-2. Substitua src/components/CharacterEditor.jsx pelo arquivo desta pasta (ele mantém o formulário de criação e edição com os campos já existentes).
-3. Aguarde o Vercel terminar a publicação.
+Arquivos para substituir no projeto:
+- src/components/SheetRenderer.jsx
+- src/components/CharacterEditor.jsx
+- src/pages/MasterDashboard.jsx
+- src/styles/index.css
 
-Como editar uma ficha existente:
-- Entre na Área do mestre.
-- Na ficha que deseja corrigir, clique no ícone de lápis (Editar).
-- O formulário abre preenchido com os dados atuais. Altere o que estiver errado e clique em Salvar ficha.
+O que muda:
+1. Vida e pontos de esforço ficam grandes, lado a lado, com barra de progresso e botões maiores.
+2. Armadura, esquiva e bloqueio ficam numa segunda linha compacta.
+3. Criar/editar ficha abre uma página ampla, não uma janela pequena. Na edição, os dados existentes são carregados para corrigir.
+4. Na Área do mestre, cada ficha passa a ter botão visível “Editar ficha”.
 
-O ajuste visual se limita aos controles de Vida e Pontos de Esforço e ao tamanho/apresentação do formulário de edição; não altera a estrutura dos dados nem o SQL.
+Não precisa rodar SQL. Faça commit dos quatro arquivos no GitHub e aguarde a publicação do Vercel.

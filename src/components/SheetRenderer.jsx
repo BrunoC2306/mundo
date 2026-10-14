@@ -44,13 +44,18 @@ function CustomSheet({ data, onResourceChange, savingResources }) {
   const block = resources.bloqueio ?? defenses.bloqueio ?? 0
   return <div className="sv sv--character character-sheet-layout">
     <div className="character-sheet-content">
-      <section className="panel"><h3 className="panel__title">Dados gerais</h3><div className="character-resources">
-        <ResourceCard label="Vida" current={resources.vidaAtual} max={resources.vidaMaxima} type="life" onChange={(v) => onResourceChange?.('vidaAtual', v)} saving={savingResources} />
-        <ResourceCard label="Pontos de esforço" current={resources.esforcoAtual} max={resources.esforcoMaximo} type="effort" onChange={(v) => onResourceChange?.('esforcoAtual', v)} saving={savingResources} />
-        <div className="character-resource"><div className="character-resource__label">Classe de armadura</div><div className="character-resource__value">{armor}</div></div>
-        <div className="character-resource"><div className="character-resource__label">Esquiva</div><div className="character-resource__value">{dodge}</div></div>
-        <div className="character-resource"><div className="character-resource__label">Bloqueio</div><div className="character-resource__value">{block}</div></div>
-      </div><p className="resource-help">Vida e pontos de esforço podem ser alterados diretamente nesta ficha. As mudanças são salvas automaticamente.</p></section>
+      <section className="panel"><h3 className="panel__title">Dados gerais</h3>
+        <div className="character-resources-main">
+          <ResourceCard label="Vida" current={resources.vidaAtual} max={resources.vidaMaxima} type="life" onChange={(v) => onResourceChange?.('vidaAtual', v)} saving={savingResources} />
+          <ResourceCard label="Pontos de esforço" current={resources.esforcoAtual} max={resources.esforcoMaximo} type="effort" onChange={(v) => onResourceChange?.('esforcoAtual', v)} saving={savingResources} />
+        </div>
+        <div className="character-defenses-row">
+          <div className="character-defense"><span>Armadura</span><strong>{armor}</strong></div>
+          <div className="character-defense"><span>Esquiva</span><strong>{dodge}</strong></div>
+          <div className="character-defense"><span>Bloqueio</span><strong>{block}</strong></div>
+        </div>
+        <p className="resource-help">Vida e pontos de esforço podem ser alterados diretamente nesta ficha. As mudanças são salvas automaticamente.</p>
+      </section>
       <section className="panel"><h3 className="panel__title">Atributos</h3><div className="character-attributes">{Object.entries(ATTR_NAMES).filter(([key]) => attributes[key] !== undefined || key !== 'SEN').map(([key, label]) => <div className="character-attribute" key={key}><span>{label}</span><strong>{attributes[key] ?? 0}</strong><small>{key}</small></div>)}</div></section>
       {attacks.length > 0 && <section className="panel"><h3 className="panel__title">Ataques</h3><div className="sv-table-wrap"><table className="sv-table"><thead><tr><th>Nome</th><th>Teste</th><th>Dano</th><th>Especial</th></tr></thead><tbody>{attacks.map((a, i) => <tr key={i}><td>{a.nome}</td><td>{a.teste}</td><td>{a.dano}</td><td>{a.especial || '—'}</td></tr>)}</tbody></table></div></section>}
       {abilities.length > 0 && <section className="panel"><h3 className="panel__title">Habilidades</h3><div className="sv-cards">{abilities.map((a, i) => <article className="sv-card" key={i}><h4 className="sv-card__title">{a.nome}</h4>{a.custo && <p className="character-ability__cost">{a.custo}</p>}{a.descricao && <p className="sv-text">{a.descricao}</p>}</article>)}</div></section>}

@@ -1,13 +1,12 @@
-AJUSTE DE ESPAÇO DA FICHA — MUNDO DE BATALHA
+ATUALIZAÇÃO — layout de Vida/Esforço e edição de fichas
 
-Este ZIP contém somente src/styles/index.css.
+1. No GitHub, substitua src/styles/index.css pelo arquivo desta pasta.
+2. Substitua src/components/CharacterEditor.jsx pelo arquivo desta pasta (ele mantém o formulário de criação e edição com os campos já existentes).
+3. Aguarde o Vercel terminar a publicação.
 
-O ajuste é apenas de layout: reduz a largura da coluna do retrato para 140 px em telas grandes, deixando mais espaço horizontal para dados pessoais, dados gerais e atributos. Em telas médias, a coluna fica em 130 px e depois 120 px. Em telas pequenas, mantém o layout compacto já existente.
+Como editar uma ficha existente:
+- Entre na Área do mestre.
+- Na ficha que deseja corrigir, clique no ícone de lápis (Editar).
+- O formulário abre preenchido com os dados atuais. Altere o que estiver errado e clique em Salvar ficha.
 
-O restante do estilo é mantido; não há imagem de pré-visualização ou mudança de tema.
-
-INSTALAÇÃO
-1. Extraia o ZIP.
-2. Substitua o arquivo src/styles/index.css do seu projeto por este arquivo, mantendo exatamente o caminho.
-3. Envie o arquivo para o GitHub e aguarde a Vercel publicar.
-4. Atualize o site com Ctrl+F5.
+O ajuste visual se limita aos controles de Vida e Pontos de Esforço e ao tamanho/apresentação do formulário de edição; não altera a estrutura dos dados nem o SQL.

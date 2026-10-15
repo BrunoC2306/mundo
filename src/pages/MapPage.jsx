@@ -5,19 +5,18 @@ import { useMaster } from '../state/MasterContext.jsx'
 import '../styles/map-page.css'
 
 const PLACES = [
-  // Coordenadas ajustadas para a imagem mapa-mundo.png (marcadores no centro de cada ponto).
-  { id:'torre-vingadores', name:'Torre dos Vingadores', x:12, y:39 },
-  { id:'base-shield', name:'Base da S.H.I.E.L.D.', x:36, y:27 },
-  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:85, y:10 },
-  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:49, y:42 },
-  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:31, y:59 },
-  { id:'castelo-genosha', name:'Castelo de Genosha', x:86, y:44 },
-  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:66, y:61 },
-  { id:'complexo-hydra', name:'Complexo da HYDRA', x:60, y:81 },
-  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:56, y:54 },
-  { id:'galpao-abandonado', name:'Galpão abandonado', x:60, y:13 },
-  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:86, y:84 },
-  { id:'doca-porto', name:'Doca / Porto', x:12, y:10 },
+  { id:'torre-vingadores', name:'Torre dos Vingadores', x:70, y:24 },
+  { id:'base-shield', name:'Base da S.H.I.E.L.D.', x:54, y:42 },
+  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:20, y:18 },
+  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:14, y:64 },
+  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:34, y:32 },
+  { id:'castelo-genosha', name:'Castelo de Genosha', x:84, y:70 },
+  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:61, y:32 },
+  { id:'complexo-hydra', name:'Complexo da HYDRA', x:37, y:77 },
+  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:57, y:53 },
+  { id:'galpao-abandonado', name:'Galpão abandonado', x:77, y:48 },
+  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:48, y:88 },
+  { id:'doca-porto', name:'Doca / Porto', x:89, y:38 },
 ]
 const MASTER_ROLE = (u) => u?.app_metadata?.mb_role === 'master'
 
@@ -60,7 +59,17 @@ export default function MapPage() {
   }
   async function addScene() {
     if (!isMaster || !selected || !title.trim() || !imageUrl.trim()) return
-    const {data,error:e}=await supabase.from('map_scenes').insert({place_id:selected,title:title.trim(),image_url:imageUrl.trim(),scene_type:'explore'}).select().single()
+    setError('')
+    // Garante que o local pai exista antes de criar a cena (corrige a foreign key).
+    const selectedPlace = PLACES.find(p => p.id === selected)
+    if (!selectedPlace) { setError('Este local não foi encontrado no mapa. Volta ao mapa e abre o local novamente.'); return }
+    const { error: placeError } = await supabase.from('map_places').upsert({
+      place_id: selectedPlace.id, name: selectedPlace.name,
+      locked: places.find(p => p.id === selectedPlace.id)?.locked ?? true,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'place_id' })
+    if (placeError) { setError('Não consegui preparar o local para receber cenas: ' + placeError.message); return }
+    const {data,error:e}=await supabase.from('map_scenes').insert({place_id:selectedPlace.id,title:title.trim(),image_url:imageUrl.trim(),scene_type:'explore'}).select().single()
     if(e){setError('Não consegui salvar a cena: '+e.message);return}
     setScenes(old=>[...old,data]);setTitle('');setImageUrl('')
   }
@@ -102,7 +111,7 @@ export default function MapPage() {
     const placeScenes=scenes.filter(s=>s.place_id===place.id)
     if(place.locked&&!isMaster)return <section className="map-page"><button className="map-button" onClick={()=>setSelected(null)}><ArrowLeft size={16}/> Voltar ao mapa</button><div className="map-locked"><LockKeyhole size={36}/><h2>Local ainda não descoberto</h2><p>O mestre ainda não liberou este lugar.</p></div></section>
     return <section className="map-page"><header className="map-toolbar"><button className="map-button" onClick={()=>setSelected(null)}><ArrowLeft size={17}/> Mapa geral</button><div><h1>{place.name}</h1><p>{placeScenes.length} cena(s) disponível(is)</p></div>{isMaster&&<button className="map-button" onClick={()=>togglePlace(place)}>{place.locked?'Liberar local':'Bloquear local'}</button>}</header>
-      {isMaster&&<form className="map-add-scene" onSubmit={e=>{e.preventDefault();addScene()}}><h3><ImagePlus size={18}/> Adicionar cena / ambiente</h3><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Nome do ambiente (ex.: Recepção)" required/><input value={imageUrl} onChange={e=>setImageUrl(e.target.value)} placeholder="URL pública da imagem do cenário" required/><button className="map-button" type="submit"><Plus size={16}/> Adicionar cena</button><small>Por enquanto, cola uma URL pública da imagem. O envio direto de arquivos pode ser adicionado depois com armazenamento do Supabase.</small></form>}
+      {isMaster&&<form className="map-add-scene" onSubmit={e=>{e.preventDefault();addScene()}}><h3><ImagePlus size={18}/> Criar ambiente de exploração</h3><p className="map-scene-help">Cada ambiente é uma cena dentro deste local. Usa um link direto para uma imagem JPG, PNG ou WebP; depois clica na imagem para entrar nela.</p><label className="map-scene-field"><span>Nome da cena</span><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex.: Recepção, laboratório, sala principal" required/></label><label className="map-scene-field"><span>Link direto da imagem</span><input type="url" value={imageUrl} onChange={e=>setImageUrl(e.target.value)} placeholder="https://.../imagem.jpg" required/></label>{imageUrl.trim()&&<div className="map-scene-preview"><img src={imageUrl} alt="Prévia da imagem da cena" onError={e=>{e.currentTarget.style.display='none'}} onLoad={e=>{e.currentTarget.style.display='block'}}/><span>Prévia da imagem</span></div>}<button className="map-button" type="submit"><Plus size={16}/> Salvar ambiente</button><small>O link precisa abrir a imagem diretamente, não uma página de galeria. O envio de arquivos do computador ainda não está disponível nesta versão.</small></form>}
       <div className="map-scene-grid">{placeScenes.map(s=><article className="map-scene-card" key={s.id}><button className="map-scene-open" onClick={()=>{setScene(s);setMode(s.scene_type==='combat'?'combat':'explore')}}><img src={s.image_url} alt={s.title}/><span>{s.title}</span><small>{s.scene_type==='combat'?'Mapa de combate':'Cena de exploração'}</small></button><div className="map-scene-actions"><button onClick={()=>setCombatImage(s)}><Swords size={15}/> Usar em combate</button>{isMaster&&<button onClick={()=>removeScene(s)} aria-label="Excluir cena"><Trash2 size={15}/></button>}</div></article>)}</div>
       {!placeScenes.length&&<div className="map-empty">{isMaster?'Adiciona a primeira imagem deste local acima.':'O mestre ainda não adicionou cenas a este local.'}</div>}{error&&<p className="map-error">{error}</p>}
     </section>

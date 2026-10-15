@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ImagePlus, MapPin, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ImagePlus, MapPin, Trash2, Lock, Unlock } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
 import { useMaster } from '../state/MasterContext.jsx'
 import PageHeader from '../components/PageHeader.jsx'
@@ -29,6 +29,30 @@ export default function MapPage() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [caption, setCaption] = useState('')
+  const [unlocked, setUnlocked] = useState([])
+  const [accessLoading, setAccessLoading] = useState(true)
+
+  async function loadAccess() {
+    setAccessLoading(true)
+    const { data, error } = await supabase.from('map_location_access').select('location_id, is_unlocked')
+    if (!error) setUnlocked((data || []).filter(row => row.is_unlocked).map(row => row.location_id))
+    else setNotice('Não foi possível carregar o acesso aos locais. O mestre precisa executar o SQL de bloqueio do mapa no Supabase.')
+    setAccessLoading(false)
+  }
+
+  useEffect(() => { loadAccess() }, [])
+
+  async function toggleLocation(loc) {
+    const currentlyUnlocked = unlocked.includes(loc.id)
+    setBusy(true); setNotice('')
+    const { error } = await supabase.from('map_location_access').upsert(
+      { location_id: loc.id, is_unlocked: !currentlyUnlocked, updated_at: new Date().toISOString() },
+      { onConflict: 'location_id' }
+    )
+    if (error) setNotice(`Não foi possível alterar o acesso: ${error.message}`)
+    else setUnlocked(prev => currentlyUnlocked ? prev.filter(id => id !== loc.id) : [...prev, loc.id])
+    setBusy(false)
+  }
 
   async function loadPhotos(location) {
     setLoading(true); setNotice('')
@@ -72,10 +96,20 @@ export default function MapPage() {
         <div className="map-page__intro"><span><MapPin size={16}/> MAPA DA CAMPANHA</span><p>Clique em um marcador para entrar no local e ver as imagens adicionadas pelo mestre.</p></div>
         <div className="world-map">
           <img className="world-map__image" src="/mapa-mundo.png" alt="Mapa ilustrado do Mundo de Batalha" />
-          {LOCATIONS.map((loc, index) => <button key={loc.id} className="map-pin" style={{left:`${loc.x}%`,top:`${loc.y}%`}} onClick={() => setSelected(loc)} title={loc.name} aria-label={loc.name}>
-            <span className="map-pin__dot"><MapPin size={17}/></span><span className="map-pin__label">{loc.name}</span>
-          </button>)}
+          {LOCATIONS.map(loc => {
+            const isUnlocked = unlocked.includes(loc.id)
+            const blocked = !isMaster && !isUnlocked
+            return <button key={loc.id} className={`map-pin ${blocked ? 'map-pin--locked' : ''}`} style={{left:`${loc.x}%`,top:`${loc.y}%`}} onClick={() => blocked ? setNotice(`${loc.name} ainda não foi liberado pelo mestre.`) : (setNotice(''), setSelected(loc))} title={blocked ? `${loc.name} — bloqueado` : loc.name} aria-label={loc.name}>
+              <span className="map-pin__dot">{blocked ? <Lock size={16}/> : <MapPin size={17}/>}</span><span className="map-pin__label">{loc.name}</span>
+              {isMaster && <span className={`map-pin__status ${isUnlocked ? 'is-open' : ''}`}>{isUnlocked ? 'Liberado' : 'Bloqueado'}</span>}
+            </button>
+          })}
         </div>
+        {notice && <div className="alert alert--bad">{notice}</div>}
+        {isMaster && <div className="map-access-panel"><h3>Controle de acesso dos locais</h3><p>Libera um local quando os jogadores chegarem até ele. Locais bloqueados aparecem com cadeado para os jogadores.</p><div className="map-access-list">{LOCATIONS.map(loc => {
+          const open = unlocked.includes(loc.id)
+          return <div className="map-access-row" key={loc.id}><span>{loc.name}</span><button className={`btn ${open ? 'btn--secondary' : 'btn--primary'}`} disabled={busy || accessLoading} onClick={() => toggleLocation(loc)}>{open ? <><Lock size={15}/> Bloquear</> : <><Unlock size={15}/> Liberar</>}</button></div>
+        })}</div></div>}
         <p className="map-page__footnote">Os marcadores indicam posições aproximadas e podem ser ajustados conforme a campanha.</p>
       </> : <>
         <button className="map-back" onClick={() => { setSelected(null); setNotice('') }}><ArrowLeft size={17}/> Voltar ao mapa</button>

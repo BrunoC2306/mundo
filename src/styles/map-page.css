@@ -36,3 +36,15 @@
  .location-heading { align-items:flex-start; flex-direction:column; }
  .location-heading h2 { font-size:27px; }
 }
+
+.map-pin--locked .map-pin__dot { background:#4b5563; border-color:#9ca3af; }
+.map-pin--locked .map-pin__label { opacity:.78; }
+.map-pin__status { display:block; margin-top:3px; padding:2px 4px; border-radius:3px; background:#7f1d1d; color:#fff; font-size:9px; font-weight:700; text-align:center; }
+.map-pin__status.is-open { background:#166534; }
+.map-access-panel { margin-top:22px; padding:18px; background:var(--surface); border:1px solid var(--line); }
+.map-access-panel h3 { margin:0 0 6px; }
+.map-access-panel > p { color:var(--dim); font-size:13px; margin-bottom:14px; }
+.map-access-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:8px; }
+.map-access-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border:1px solid var(--line); border-radius:4px; }
+.map-access-row > span { font-size:13px; }
+.map-access-row .btn { display:flex; align-items:center; gap:5px; white-space:nowrap; }

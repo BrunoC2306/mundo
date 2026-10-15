@@ -1,0 +1,17 @@
+ATUALIZAÇÃO PARCIAL — MAPA DO MUNDO DE BATALHA
+
+Arquivos deste pacote:
+- src/pages/MapPage.jsx
+- src/styles/map-page.css
+- public/mapa-mundo.png
+- supabase-mapa-locais.sql
+
+1. Copie os 3 arquivos/pastas para os mesmos caminhos do projeto, substituindo se solicitado.
+2. Em src/App.jsx, adicione:
+   import MapPage from './pages/MapPage.jsx'
+   e troque a rota /mapa que usa ComingSoon por:
+   <Route path="/mapa" element={<MapPage />} />
+3. No Supabase, abra SQL Editor, cole o conteúdo de supabase-mapa-locais.sql e execute.
+4. Faça commit/push no GitHub e aguarde o deploy da Vercel.
+
+O mestre autenticado com app_metadata.mb_role = 'master' poderá adicionar várias imagens por local e removê-las. Os jogadores podem abrir os locais e ver as imagens. A primeira imagem do mapa é usada como fundo. As posições dos marcadores são aproximadas e podem ser ajustadas.

@@ -9,6 +9,7 @@ import SheetView from './pages/SheetView.jsx'
 import MasterPage from './pages/MasterPage.jsx'
 import ComingSoon from './pages/ComingSoon.jsx'
 import AbilityTreePage from './pages/AbilityTreePage.jsx'
+import MapPage from './pages/MapPage.jsx'
 import SetupNeeded from './pages/SetupNeeded.jsx'
 
 // O mapa vira a página inicial quando for implementado (etapa 8).
@@ -25,7 +26,7 @@ export default function App() {
             <main className="main">
               <Routes>
                 <Route path="/" element={<Navigate to={DEFAULT_ROUTE} replace />} />
-                <Route path="/mapa" element={<ComingSoon title="Mapa" stage="8" text="Mapa do Mundo de Batalha com pontos de interesse e galerias de imagens." />} />
+                <Route path="/mapa" element={<MapPage />} />
                 <Route path="/fichas" element={<SheetsPage />} />
                 <Route path="/fichas/:slug" element={<SheetView />} />
                 <Route path="/arvores" element={<AbilityTreePage />} />

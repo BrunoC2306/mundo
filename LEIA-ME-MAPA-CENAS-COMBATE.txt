@@ -1,0 +1,28 @@
+MUNDO DE BATALHA — ATUALIZAÇÃO PARCIAL DO MAPA
+
+Arquivos incluídos:
+- src/App.jsx (liga a página Mapa à navegação existente)
+- src/pages/MapPage.jsx (mapa, locais, cenas e tokens)
+- src/styles/map-page.css (estilo visual)
+- public/mapa-mundo.png (imagem de mapa fornecida)
+- supabase/08_mapa_cenas_combate.sql (tabelas e políticas)
+
+INSTALAÇÃO
+1. Faça backup do projeto atual.
+2. Extraia este ZIP na raiz do repositório e mantenha os caminhos. Substitua apenas os arquivos de mesmo caminho.
+3. No Supabase > SQL Editor, execute supabase/08_mapa_cenas_combate.sql.
+4. Faça commit/push ao GitHub e aguarde a Vercel publicar.
+
+COMO USAR
+- Abra Mapa e clique num ponto.
+- Para adicionar cenas, use uma URL pública de imagem (ainda não há upload direto nesta versão).
+- Abra uma cena e selecione Combate para usar a imagem como mapa de batalha.
+- No modo mestre, adicione tokens e arraste-os para mover; as posições são gravadas no Supabase.
+- Novos locais começam bloqueados. O mestre pode liberar/bloquear pelo marcador ou dentro do local.
+
+LIMITAÇÕES IMPORTANTES
+- Os pontos do mapa são posições iniciais aproximadas e podem precisar ajuste.
+- Para adicionar imagens nesta versão, é preciso colar URL pública; upload direto ao Supabase Storage não está incluído.
+- Tokens desta versão são peças simples com símbolo, não retratos personalizados.
+- O banco permite leitura pública das cenas e posições. A escrita é limitada a usuários com app_metadata.mb_role = 'master'.
+- Não foi testado no projeto publicado. Faça backup antes de aplicar e teste primeiro em uma cópia.

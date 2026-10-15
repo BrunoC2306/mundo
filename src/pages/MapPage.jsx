@@ -1,129 +1,115 @@
-import { useEffect, useState } from 'react'
-import { ArrowLeft, ImagePlus, MapPin, Trash2, Lock, Unlock } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, LockKeyhole, MapPin, Plus, Swords, ImagePlus, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
 import { useMaster } from '../state/MasterContext.jsx'
-import PageHeader from '../components/PageHeader.jsx'
 import '../styles/map-page.css'
 
-const LOCATIONS = [
-  { id:'porto', name:'Doca/Porto', x:12, y:10, desc:'Área portuária e docas.' },
-  { id:'galpao', name:'Galpão abandonado', x:48, y:12, desc:'Um galpão isolado nos arredores.' },
-  { id:'tony', name:'Casa de luxo Tony Stark', x:86, y:10, desc:'Residência de luxo de Tony Stark.' },
-  { id:'shield', name:'Base S.H.I.E.L.D.', x:34, y:28, desc:'Instalação da S.H.I.E.L.D.' },
-  { id:'sanctum', name:'Sanctum Sanctorum', x:80, y:29, desc:'Residência e santuário do Doutor Estranho.' },
-  { id:'guardioes', name:'Nave dos Guardiões da Galáxia', x:52, y:40, desc:'Ponto de pouso da nave dos Guardiões.' },
-  { id:'vingadores', name:'Torre dos Vingadores', x:12, y:43, desc:'A torre dos Vingadores.' },
-  { id:'genosha', name:'Castelo de Genosha', x:84, y:47, desc:'Castelo ligado a Genosha.' },
-  { id:'xavier', name:'Mansão Charles Xavier', x:20, y:63, desc:'Mansão e escola para jovens mutantes.' },
-  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:56, y:65, desc:'Edifício na região de Hell’s Kitchen.' },
-  { id:'hydra', name:'Complexo da HYDRA', x:44, y:84, desc:'Complexo de operações da HYDRA.' },
-  { id:'liberdade', name:'Estátua da Liberdade', x:83, y:87, desc:'A ilha da Estátua da Liberdade.' },
+const PLACES = [
+  { id:'torre-vingadores', name:'Torre dos Vingadores', x:70, y:24 },
+  { id:'base-shield', name:'Base da S.H.I.E.L.D.', x:54, y:42 },
+  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:20, y:18 },
+  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:14, y:64 },
+  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:34, y:32 },
+  { id:'castelo-genosha', name:'Castelo de Genosha', x:84, y:70 },
+  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:61, y:32 },
+  { id:'complexo-hydra', name:'Complexo da HYDRA', x:37, y:77 },
+  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:57, y:53 },
+  { id:'galpao-abandonado', name:'Galpão abandonado', x:77, y:48 },
+  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:48, y:88 },
+  { id:'doca-porto', name:'Doca / Porto', x:89, y:38 },
 ]
-const BUCKET = 'mapa-locais'
+const MASTER_ROLE = (u) => u?.app_metadata?.mb_role === 'master'
 
 export default function MapPage() {
   const { isMaster } = useMaster()
+  const [places, setPlaces] = useState(PLACES.map(p => ({...p, locked:true})))
+  const [scenes, setScenes] = useState([])
+  const [tokens, setTokens] = useState([])
   const [selected, setSelected] = useState(null)
-  const [photos, setPhotos] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState('')
-  const [caption, setCaption] = useState('')
-  const [unlocked, setUnlocked] = useState([])
-  const [accessLoading, setAccessLoading] = useState(true)
+  const [scene, setScene] = useState(null)
+  const [mode, setMode] = useState('explore')
+  const [title, setTitle] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [tokenName, setTokenName] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [dragging, setDragging] = useState(null)
+  const place = places.find(p => p.id === selected)
 
-  async function loadAccess() {
-    setAccessLoading(true)
-    const { data, error } = await supabase.from('map_location_access').select('location_id, is_unlocked')
-    if (!error) setUnlocked((data || []).filter(row => row.is_unlocked).map(row => row.location_id))
-    else setNotice('Não foi possível carregar o acesso aos locais. O mestre precisa executar o SQL de bloqueio do mapa no Supabase.')
-    setAccessLoading(false)
+  async function loadAll() {
+    setLoading(true); setError('')
+    const [pRes,sRes,tRes] = await Promise.all([
+      supabase.from('map_places').select('*'),
+      supabase.from('map_scenes').select('*').order('created_at'),
+      supabase.from('map_tokens').select('*').order('created_at'),
+    ])
+    if (pRes.error && pRes.error.code !== 'PGRST116') setError('Não consegui carregar os locais. Confere se executaste o SQL incluído no ZIP.')
+    const pRows = pRes.data || []
+    setPlaces(PLACES.map(p => ({...p, locked: pRows.find(r => r.place_id === p.id)?.locked ?? true})))
+    setScenes(sRes.data || []); setTokens(tRes.data || []); setLoading(false)
   }
+  useEffect(() => { loadAll() }, [])
 
-  useEffect(() => { loadAccess() }, [])
-
-  async function toggleLocation(loc) {
-    const currentlyUnlocked = unlocked.includes(loc.id)
-    setBusy(true); setNotice('')
-    const { error } = await supabase.from('map_location_access').upsert(
-      { location_id: loc.id, is_unlocked: !currentlyUnlocked, updated_at: new Date().toISOString() },
-      { onConflict: 'location_id' }
-    )
-    if (error) setNotice(`Não foi possível alterar o acesso: ${error.message}`)
-    else setUnlocked(prev => currentlyUnlocked ? prev.filter(id => id !== loc.id) : [...prev, loc.id])
-    setBusy(false)
+  async function togglePlace(p) {
+    if (!isMaster) return
+    const next = !p.locked
+    const { error: e } = await supabase.from('map_places').upsert({place_id:p.id, name:p.name, locked:next, updated_at:new Date().toISOString()}, {onConflict:'place_id'})
+    if (e) { setError('Não foi possível salvar o acesso do local: '+e.message); return }
+    setPlaces(old => old.map(x => x.id===p.id ? {...x,locked:next}:x))
   }
-
-  async function loadPhotos(location) {
-    setLoading(true); setNotice('')
-    const { data, error } = await supabase.storage.from(BUCKET).list(location.id, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
-    if (error) { setPhotos([]); setNotice('Não foi possível carregar as imagens. Confere se o mestre configurou o armazenamento do mapa no Supabase.'); setLoading(false); return }
-    const items = (data || []).filter(f => f.name && !f.name.startsWith('.'))
-    setPhotos(items.map(f => {
-      const path = `${location.id}/${f.name}`
-      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path)
-      return { name:f.name, path, url:urlData.publicUrl, caption:f.metadata?.eTag ? '' : '' }
-    }))
-    setLoading(false)
+  async function addScene() {
+    if (!isMaster || !selected || !title.trim() || !imageUrl.trim()) return
+    const {data,error:e}=await supabase.from('map_scenes').insert({place_id:selected,title:title.trim(),image_url:imageUrl.trim(),scene_type:'explore'}).select().single()
+    if(e){setError('Não consegui salvar a cena: '+e.message);return}
+    setScenes(old=>[...old,data]);setTitle('');setImageUrl('')
   }
-  useEffect(() => { if (selected) loadPhotos(selected) }, [selected?.id])
-
-  async function addFiles(event) {
-    const files = Array.from(event.target.files || [])
-    event.target.value = ''
-    if (!selected || !files.length) return
-    setBusy(true); setNotice('')
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) continue
-      const safeName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-')
-      const path = `${selected.id}/${Date.now()}-${safeName}`
-      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert:false, contentType:file.type })
-      if (error) { setNotice(`Erro ao enviar ${file.name}: ${error.message}`); break }
-    }
-    await loadPhotos(selected); setBusy(false)
+  async function setCombatImage(s) {
+    const {error:e}=await supabase.from('map_scenes').update({scene_type:'combat'}).eq('id',s.id)
+    if(e){setError('Não consegui marcar o mapa de combate: '+e.message);return}
+    setScenes(old=>old.map(x=>x.id===s.id?{...x,scene_type:'combat'}:x));setScene({...s,scene_type:'combat'});setMode('combat')
   }
-  async function removePhoto(photo) {
-    if (!confirm('Remover esta imagem deste local?')) return
-    const { error } = await supabase.storage.from(BUCKET).remove([photo.path])
-    if (error) setNotice(`Não foi possível remover: ${error.message}`)
-    else await loadPhotos(selected)
+  async function addToken() {
+    if(!isMaster||!scene||!tokenName.trim())return
+    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:'♟'}).select().single()
+    if(e){setError('Não consegui criar o token: '+e.message);return}
+    setTokens(old=>[...old,data]);setTokenName('')
   }
-
-  return <section className="page map-page">
-    <PageHeader title="Mapa" subtitle="Explore os locais do Mundo de Batalha." />
-    <div className="map-page__body">
-      {!selected ? <>
-        <div className="map-page__intro"><span><MapPin size={16}/> MAPA DA CAMPANHA</span><p>Clique em um marcador para entrar no local e ver as imagens adicionadas pelo mestre.</p></div>
-        <div className="world-map">
-          <img className="world-map__image" src="/mapa-mundo.png" alt="Mapa ilustrado do Mundo de Batalha" />
-          {LOCATIONS.map(loc => {
-            const isUnlocked = unlocked.includes(loc.id)
-            const blocked = !isMaster && !isUnlocked
-            return <button key={loc.id} className={`map-pin ${blocked ? 'map-pin--locked' : ''}`} style={{left:`${loc.x}%`,top:`${loc.y}%`}} onClick={() => blocked ? setNotice(`${loc.name} ainda não foi liberado pelo mestre.`) : (setNotice(''), setSelected(loc))} title={blocked ? `${loc.name} — bloqueado` : loc.name} aria-label={loc.name}>
-              <span className="map-pin__dot">{blocked ? <Lock size={16}/> : <MapPin size={17}/>}</span><span className="map-pin__label">{loc.name}</span>
-              {isMaster && <span className={`map-pin__status ${isUnlocked ? 'is-open' : ''}`}>{isUnlocked ? 'Liberado' : 'Bloqueado'}</span>}
-            </button>
-          })}
-        </div>
-        {notice && <div className="alert alert--bad">{notice}</div>}
-        {isMaster && <div className="map-access-panel"><h3>Controle de acesso dos locais</h3><p>Libera um local quando os jogadores chegarem até ele. Locais bloqueados aparecem com cadeado para os jogadores.</p><div className="map-access-list">{LOCATIONS.map(loc => {
-          const open = unlocked.includes(loc.id)
-          return <div className="map-access-row" key={loc.id}><span>{loc.name}</span><button className={`btn ${open ? 'btn--secondary' : 'btn--primary'}`} disabled={busy || accessLoading} onClick={() => toggleLocation(loc)}>{open ? <><Lock size={15}/> Bloquear</> : <><Unlock size={15}/> Liberar</>}</button></div>
-        })}</div></div>}
-        <p className="map-page__footnote">Os marcadores indicam posições aproximadas e podem ser ajustados conforme a campanha.</p>
-      </> : <>
-        <button className="map-back" onClick={() => { setSelected(null); setNotice('') }}><ArrowLeft size={17}/> Voltar ao mapa</button>
-        <div className="location-heading"><div><span className="location-heading__eyebrow">LOCALIZAÇÃO</span><h2>{selected.name}</h2><p>{selected.desc}</p></div>
-          {isMaster && <label className="btn btn--primary map-upload"><ImagePlus size={17}/>{busy ? 'Enviando...' : 'Adicionar imagens'}<input type="file" accept="image/*" multiple disabled={busy} onChange={addFiles}/></label>}
-        </div>
-        {isMaster && <p className="map-page__hint">As imagens enviadas aqui ficam disponíveis para todos os jogadores. Podes selecionar várias de uma vez.</p>}
-        {notice && <div className="alert alert--bad">{notice}</div>}
-        {loading ? <div className="map-empty">Carregando imagens...</div> : photos.length ? <div className="location-gallery">{photos.map(photo => <article className="location-photo" key={photo.path}>
-          <a href={photo.url} target="_blank" rel="noreferrer"><img src={photo.url} alt={photo.name}/></a>
-          {isMaster && <button className="location-photo__remove" onClick={() => removePhoto(photo)} title="Remover imagem"><Trash2 size={16}/></button>}
-          <div className="location-photo__name">{photo.name.replace(/^\d+-/, '').replace(/-/g,' ')}</div>
-        </article>)}</div> : <div className="map-empty"><ImagePlus size={30}/><h3>Nenhuma imagem neste local ainda</h3><p>{isMaster ? 'Adiciona as imagens usando o botão acima.' : 'O mestre ainda não adicionou imagens a este local.'}</p></div>}
-      </>}
+  async function moveToken(id,x,y) {
+    setTokens(old=>old.map(t=>t.id===id?{...t,x,y}:t))
+    const {error:e}=await supabase.from('map_tokens').update({x,y}).eq('id',id)
+    if(e)setError('A posição do token não foi salva: '+e.message)
+  }
+  async function removeScene(s) {
+    if(!isMaster||!confirm('Excluir esta cena?'))return
+    const {error:e}=await supabase.from('map_scenes').delete().eq('id',s.id)
+    if(e){setError(e.message);return}
+    setScenes(old=>old.filter(x=>x.id!==s.id));setTokens(old=>old.filter(t=>t.scene_id!==s.id));if(scene?.id===s.id)setScene(null)
+  }
+  const sceneTokens = useMemo(()=>tokens.filter(t=>t.scene_id===scene?.id),[tokens,scene])
+  if (loading) return <section className="map-page"><p>Carregando o mapa…</p></section>
+  if (scene) return <section className="map-page map-page--scene">
+    <header className="map-toolbar"><button className="map-button" onClick={()=>{setScene(null);setMode('explore')}}><ArrowLeft size={17}/> Voltar ao local</button><div><h1>{scene.title}</h1><p>{place?.name || PLACES.find(p=>p.id===scene.place_id)?.name}</p></div><div className="map-mode-switch"><button className={mode==='explore'?'active':''} onClick={()=>setMode('explore')}>Exploração</button><button className={mode==='combat'?'active':''} onClick={()=>setMode('combat')}><Swords size={15}/> Combate</button></div></header>
+    <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.15),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
+      {mode==='combat' && sceneTokens.map(t=><button key={t.id} className="map-token" style={{left:`${t.x}%`,top:`${t.y}%`}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);setDragging({id:t.id})}} title={isMaster?'Arrasta para mover':t.name}><span>{t.emoji||'♟'}</span><small>{t.name}</small></button>)}
+      {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
     </div>
+    {isMaster&&mode==='combat'&&<form className="map-inline-form" onSubmit={e=>{e.preventDefault();addToken()}}><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo"/><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button><span>Arrasta os tokens para mover. As posições são salvas para todos.</span></form>}
+    {error&&<p className="map-error">{error}</p>}
+  </section>
+
+  if (place) {
+    const placeScenes=scenes.filter(s=>s.place_id===place.id)
+    if(place.locked&&!isMaster)return <section className="map-page"><button className="map-button" onClick={()=>setSelected(null)}><ArrowLeft size={16}/> Voltar ao mapa</button><div className="map-locked"><LockKeyhole size={36}/><h2>Local ainda não descoberto</h2><p>O mestre ainda não liberou este lugar.</p></div></section>
+    return <section className="map-page"><header className="map-toolbar"><button className="map-button" onClick={()=>setSelected(null)}><ArrowLeft size={17}/> Mapa geral</button><div><h1>{place.name}</h1><p>{placeScenes.length} cena(s) disponível(is)</p></div>{isMaster&&<button className="map-button" onClick={()=>togglePlace(place)}>{place.locked?'Liberar local':'Bloquear local'}</button>}</header>
+      {isMaster&&<form className="map-add-scene" onSubmit={e=>{e.preventDefault();addScene()}}><h3><ImagePlus size={18}/> Adicionar cena / ambiente</h3><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Nome do ambiente (ex.: Recepção)" required/><input value={imageUrl} onChange={e=>setImageUrl(e.target.value)} placeholder="URL pública da imagem do cenário" required/><button className="map-button" type="submit"><Plus size={16}/> Adicionar cena</button><small>Por enquanto, cola uma URL pública da imagem. O envio direto de arquivos pode ser adicionado depois com armazenamento do Supabase.</small></form>}
+      <div className="map-scene-grid">{placeScenes.map(s=><article className="map-scene-card" key={s.id}><button className="map-scene-open" onClick={()=>{setScene(s);setMode(s.scene_type==='combat'?'combat':'explore')}}><img src={s.image_url} alt={s.title}/><span>{s.title}</span><small>{s.scene_type==='combat'?'Mapa de combate':'Cena de exploração'}</small></button><div className="map-scene-actions"><button onClick={()=>setCombatImage(s)}><Swords size={15}/> Usar em combate</button>{isMaster&&<button onClick={()=>removeScene(s)} aria-label="Excluir cena"><Trash2 size={15}/></button>}</div></article>)}</div>
+      {!placeScenes.length&&<div className="map-empty">{isMaster?'Adiciona a primeira imagem deste local acima.':'O mestre ainda não adicionou cenas a este local.'}</div>}{error&&<p className="map-error">{error}</p>}
+    </section>
+  }
+
+  return <section className="map-page"><header className="map-toolbar"><div><h1>Mundo de Batalha</h1><p>Escolhe um ponto do mapa para entrar no local.</p></div>{isMaster&&<span className="map-master-label">Modo mestre: controla os acessos</span>}</header>
+    {error&&<p className="map-error">{error}</p>}
+    <div className="map-world" style={{backgroundImage:'url("/mapa-mundo.png")'}}>{places.map(p=><button key={p.id} className={`map-place ${p.locked?'locked':''}`} style={{left:`${p.x}%`,top:`${p.y}%`}} onClick={()=>setSelected(p.id)} title={p.name}><span className="map-place-icon">{p.locked&&!isMaster?<LockKeyhole size={16}/>:<MapPin size={17}/>}</span><span className="map-place-name">{p.name}</span>{isMaster&&<span className="map-place-lock" onClick={e=>{e.stopPropagation();togglePlace(p)}}>{p.locked?'Bloqueado':'Liberado'}</span>}</button>)}</div>
+    <p className="map-footnote">{isMaster?'Clica num local para editar suas cenas. Usa o status no marcador para liberar ou bloquear o acesso.':'Locais bloqueados aparecem com cadeado e podem ser liberados pelo mestre.'}</p>
   </section>
 }

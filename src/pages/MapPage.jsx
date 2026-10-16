@@ -5,18 +5,18 @@ import { useMaster } from '../state/MasterContext.jsx'
 import '../styles/map-page.css'
 
 const PLACES = [
-  { id:'torre-vingadores', name:'Torre dos Vingadores', x:70, y:24 },
-  { id:'base-shield', name:'Base da S.H.I.E.L.D.', x:54, y:42 },
-  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:20, y:18 },
-  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:14, y:64 },
-  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:34, y:32 },
-  { id:'castelo-genosha', name:'Castelo de Genosha', x:84, y:70 },
-  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:61, y:32 },
-  { id:'complexo-hydra', name:'Complexo da HYDRA', x:37, y:77 },
-  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:57, y:53 },
-  { id:'galpao-abandonado', name:'Galpão abandonado', x:77, y:48 },
-  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:48, y:88 },
-  { id:'doca-porto', name:'Doca / Porto', x:89, y:38 },
+  { id:'torre-vingadores', name:'Torre dos Vingadores', x:9, y:45 },
+  { id:'base-shield', name:'Base S.H.I.E.L.D.', x:23, y:25 },
+  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:86, y:5 },
+  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:46, y:37 },
+  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:10, y:68 },
+  { id:'castelo-genosha', name:'Castelo de Genosha', x:80, y:53 },
+  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:55, y:67 },
+  { id:'complexo-hydra', name:'Complexo da HYDRA', x:43, y:87 },
+  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:82, y:27 },
+  { id:'galpao-abandonado', name:'Galpão abandonado', x:48, y:10 },
+  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:80, y:86 },
+  { id:'doca-porto', name:'Doca / Porto', x:14, y:4 },
 ]
 const MASTER_ROLE = (u) => u?.app_metadata?.mb_role === 'master'
 
@@ -31,6 +31,7 @@ export default function MapPage() {
   const [title, setTitle] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [tokenName, setTokenName] = useState('')
+  const [tokenEmoji, setTokenEmoji] = useState('🦸')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(null)
@@ -80,7 +81,7 @@ export default function MapPage() {
   }
   async function addToken() {
     if(!isMaster||!scene||!tokenName.trim())return
-    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:'♟'}).select().single()
+    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:tokenEmoji}).select().single()
     if(e){setError('Não consegui criar o token: '+e.message);return}
     setTokens(old=>[...old,data]);setTokenName('')
   }
@@ -88,6 +89,12 @@ export default function MapPage() {
     setTokens(old=>old.map(t=>t.id===id?{...t,x,y}:t))
     const {error:e}=await supabase.from('map_tokens').update({x,y}).eq('id',id)
     if(e)setError('A posição do token não foi salva: '+e.message)
+  }
+  async function removeToken(t) {
+    if (!isMaster || !confirm(`Remover o token ${t.name}?`)) return
+    const { error: e } = await supabase.from('map_tokens').delete().eq('id', t.id)
+    if (e) { setError('Não consegui remover o token: ' + e.message); return }
+    setTokens(old => old.filter(x => x.id !== t.id))
   }
   async function removeScene(s) {
     if(!isMaster||!confirm('Excluir esta cena?'))return
@@ -100,10 +107,14 @@ export default function MapPage() {
   if (scene) return <section className="map-page map-page--scene">
     <header className="map-toolbar"><button className="map-button" onClick={()=>{setScene(null);setMode('explore')}}><ArrowLeft size={17}/> Voltar ao local</button><div><h1>{scene.title}</h1><p>{place?.name || PLACES.find(p=>p.id===scene.place_id)?.name}</p></div><div className="map-mode-switch"><button className={mode==='explore'?'active':''} onClick={()=>setMode('explore')}>Exploração</button><button className={mode==='combat'?'active':''} onClick={()=>setMode('combat')}><Swords size={15}/> Combate</button></div></header>
     <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.15),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
-      {mode==='combat' && sceneTokens.map(t=><button key={t.id} className="map-token" style={{left:`${t.x}%`,top:`${t.y}%`}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);setDragging({id:t.id})}} title={isMaster?'Arrasta para mover':t.name}><span>{t.emoji||'♟'}</span><small>{t.name}</small></button>)}
+      {mode==='combat' && <div className="combat-grid-overlay" aria-hidden="true" />}
+      {mode==='combat' && sceneTokens.map(t=><div key={t.id} className="map-token-wrap" style={{left:`${t.x}%`,top:`${t.y}%`}}>
+        <button className="map-token" onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);setDragging({id:t.id})}} title={isMaster?'Arrasta para mover':t.name}><span>{t.emoji||'♟'}</span><small>{t.name}</small></button>
+        {isMaster&&<button className="map-token-remove" title="Remover token" onPointerDown={e=>e.stopPropagation()} onClick={()=>removeToken(t)}>×</button>}
+      </div>)}
       {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
     </div>
-    {isMaster&&mode==='combat'&&<form className="map-inline-form" onSubmit={e=>{e.preventDefault();addToken()}}><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo"/><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button><span>Arrasta os tokens para mover. As posições são salvas para todos.</span></form>}
+    {isMaster&&mode==='combat'&&<form className="map-inline-form" onSubmit={e=>{e.preventDefault();addToken()}}><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo" required/><select aria-label="Tipo de token" value={tokenEmoji} onChange={e=>setTokenEmoji(e.target.value)}><option value="🦸">🦸 Herói</option><option value="🦹">🦹 Vilão</option><option value="👾">👾 Inimigo</option><option value="🧍">🧍 NPC</option><option value="♟">♟ Peça</option></select><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button><span>Arrasta os tokens para mover. O tabuleiro tem quadrícula e as posições são compartilhadas com a mesa.</span></form>}
     {error&&<p className="map-error">{error}</p>}
   </section>
 

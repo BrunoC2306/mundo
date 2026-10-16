@@ -5,18 +5,20 @@ import { useMaster } from '../state/MasterContext.jsx'
 import '../styles/map-page.css'
 
 const PLACES = [
-  { id:'torre-vingadores', name:'Torre dos Vingadores', x:70, y:24 },
-  { id:'base-shield', name:'Base da S.H.I.E.L.D.', x:54, y:42 },
-  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:20, y:18 },
-  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:14, y:64 },
-  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:34, y:32 },
-  { id:'castelo-genosha', name:'Castelo de Genosha', x:84, y:70 },
-  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:61, y:32 },
-  { id:'complexo-hydra', name:'Complexo da HYDRA', x:37, y:77 },
-  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:57, y:53 },
-  { id:'galpao-abandonado', name:'Galpão abandonado', x:77, y:48 },
-  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:48, y:88 },
-  { id:'doca-porto', name:'Doca / Porto', x:89, y:38 },
+  // Coordenadas relativas à imagem completa do mapa (1536 × 1024).
+  // Mantemos o mapa na proporção 3:2 para os marcadores não deslizarem quando a tela muda.
+  { id:'doca-porto', name:'Doca / Porto', x:8, y:9 },
+  { id:'galpao-abandonado', name:'Galpão abandonado', x:52, y:10 },
+  { id:'casa-tony-stark', name:'Casa de luxo do Tony Stark', x:85, y:10 },
+  { id:'base-shield', name:'Base da S.H.I.E.L.D.', x:33, y:28 },
+  { id:'sanctum-sanctorum', name:'Sanctum Sanctorum', x:68, y:24 },
+  { id:'nave-guardioes', name:'Nave dos Guardiões da Galáxia', x:47, y:41 },
+  { id:'torre-vingadores', name:'Torre dos Vingadores', x:12, y:32 },
+  { id:'castelo-genosha', name:'Castelo de Genosha', x:83, y:39 },
+  { id:'mansao-xavier', name:'Mansão Charles Xavier', x:24, y:64 },
+  { id:'hells-kitchen', name:"Prédio de Hell's Kitchen", x:61, y:60 },
+  { id:'complexo-hydra', name:'Complexo da HYDRA', x:53, y:81 },
+  { id:'estatua-liberdade', name:'Estátua da Liberdade', x:85, y:84 },
 ]
 const MASTER_ROLE = (u) => u?.app_metadata?.mb_role === 'master'
 

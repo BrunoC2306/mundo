@@ -18,3 +18,55 @@
 /* Fix: keep the full 3:2 world map visible; marker percentages remain unchanged. */
 .map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;background-position:center center;background-repeat:no-repeat;box-sizing:border-box;}
 @media(max-width:700px){.map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;}}
+
+/* Mapa mundial: imagem real + camada de marcadores sobre a mesma proporção.
+   Assim a imagem nunca é cortada e os marcadores continuam ancorados nela. */
+.map-page { overflow: visible; }
+.map-world-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  flex: 0 0 auto;
+  border: 1px solid #384355;
+  border-radius: 18px;
+  background: #121a26;
+  box-shadow: 0 18px 50px #0004;
+}
+.map-page .map-world {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 17px;
+  background: transparent;
+  box-shadow: none;
+}
+.map-world-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  border-radius: 17px;
+  user-select: none;
+  pointer-events: none;
+}
+.map-world-markers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.map-world-markers .map-place { pointer-events: auto; }
+@media (max-width: 700px) {
+  .map-world-scroll { overflow: visible; }
+  .map-page .map-world { width: 100%; height: auto; aspect-ratio: 3 / 2; }
+  .map-world-image { width: 100%; height: auto; aspect-ratio: 3 / 2; }
+  .map-world-markers { inset: 0; }
+}

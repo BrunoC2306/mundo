@@ -1,0 +1,10 @@
+MUNDO DE BATALHA — CORREÇÃO DE TOKENS E SPRITE SHEETS
+
+1. Substitua os arquivos do projeto pelos arquivos deste ZIP, mantendo as pastas.
+2. No Supabase > SQL Editor, execute supabase/11_sprite_sheets_combate.sql.
+3. O bucket público `map-scenes` deve existir (é o bucket usado pelas imagens das cenas). A conta mestre precisa ter permissão de upload nele.
+4. Publique no GitHub e aguarde o deploy da Vercel.
+
+No modo Combate, o mestre pode adicionar um token com uma imagem sprite sheet. Informe quantas colunas, linhas e quadros devem ser usados. Ao acionar uma habilidade, a sprite sheet é animada no token. O arquivo deve ter os quadros organizados em uma grade regular. A configuração atual anima a sequência inteira; para a imagem do Homem de Ferro, ajuste as colunas/linhas para a grade real do arquivo.
+
+Se o botão de adicionar não aparecer, confirme que a conta está marcada como mestre e que abriu uma cena no modo Combate. O erro de permissão é exibido na tela.

@@ -50,3 +50,14 @@
 .sprite-test-stage img{max-height:78px;max-width:100%;object-fit:contain;animation:sprite-test-pulse .55s steps(2,end) infinite alternate}
 @keyframes sprite-test-pulse{from{transform:translateX(-8px)}to{transform:translateX(8px)}}
 @media(max-width:700px){.sprite-importer-heading{align-items:flex-start}.sprite-frame-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Ajustes do importador e dos tokens: a galeria fica recolhida até ser solicitada. */
+.sprite-results{border-top:1px solid #2c3a4e;padding-top:10px;min-width:0}
+.sprite-results summary{cursor:pointer;color:#b9c8dd;font-size:12px;font-weight:700;padding:7px 2px;user-select:none}
+.sprite-results[open] summary{margin-bottom:10px;color:#f4d18a}
+/* Sprite transparente deve manter o recorte original, sem a medalha circular azul. */
+.map-token:has(.map-token-portrait img){background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;filter:none}
+.map-token:has(.map-token-portrait img).selected{outline:2px solid #f7c85b;outline-offset:4px;filter:drop-shadow(0 0 7px #f7c85b)}
+.map-token-portrait:has(img){width:76px;height:76px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible}
+.map-token-portrait img{object-fit:contain!important;object-position:center;image-rendering:auto}
+.map-token:has(.map-token-portrait img) small{display:block;margin-top:2px;text-shadow:0 2px 4px #000,0 0 6px #000}

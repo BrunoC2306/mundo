@@ -1,0 +1,13 @@
+ATUALIZAÇÃO DO MODO COMBATE E IMPORTADOR
+
+Esta atualização foi aplicada sobre o ZIP completo do projeto, mantendo os demais arquivos.
+
+Alterações:
+- A galeria de recortes da sprite sheet fica recolhida por padrão; abre em “revisar e testar animações”.
+- Tokens que usam uma imagem agora exibem a imagem sem círculo/fundo azul, mantendo a proporção.
+- No modo Combate, o mestre pode selecionar um token e pressionar Delete para removê-lo. Backspace também funciona. O atalho não dispara enquanto o foco está em campos de texto.
+
+Limitação importante:
+- A detecção da sprite sheet ainda identifica componentes visuais, não reconstrói com certeza a sequência temporal original. Para animações reais automáticas é necessário relacionar os quadros e metadados dos recursos do jogo.
+
+Instalação: substitua os arquivos correspondentes no projeto e publique no GitHub/Vercel. Não foi possível testar a publicação no Supabase/Vercel nesta sessão.

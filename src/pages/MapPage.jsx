@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, LockKeyhole, MapPin, Plus, Swords, ImagePlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, LockKeyhole, MapPin, Plus, Swords, ImagePlus, Trash2, Zap, Crosshair, UserRound, X } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
 import { useMaster } from '../state/MasterContext.jsx'
 import '../styles/map-page.css'
@@ -36,6 +36,13 @@ export default function MapPage() {
   const [uploading, setUploading] = useState(false)
   const [filePreview, setFilePreview] = useState('')
   const [tokenName, setTokenName] = useState('')
+  const [tokenEmoji, setTokenEmoji] = useState('🦸')
+  const [tokenImageFile, setTokenImageFile] = useState(null)
+  const [selectedTokenId, setSelectedTokenId] = useState(null)
+  const [abilityName, setAbilityName] = useState('')
+  const [abilities, setAbilities] = useState([])
+  const [attackFx, setAttackFx] = useState(null)
+  const [moveMode, setMoveMode] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(null)
@@ -43,15 +50,16 @@ export default function MapPage() {
 
   async function loadAll() {
     setLoading(true); setError('')
-    const [pRes,sRes,tRes] = await Promise.all([
+    const [pRes,sRes,tRes,aRes] = await Promise.all([
       supabase.from('map_places').select('*'),
       supabase.from('map_scenes').select('*').order('created_at'),
       supabase.from('map_tokens').select('*').order('created_at'),
+      supabase.from('map_token_abilities').select('*').order('created_at'),
     ])
     if (pRes.error && pRes.error.code !== 'PGRST116') setError('Não consegui carregar os locais. Confere se executaste o SQL incluído no ZIP.')
     const pRows = pRes.data || []
     setPlaces(PLACES.map(p => ({...p, locked: pRows.find(r => r.place_id === p.id)?.locked ?? true})))
-    setScenes(sRes.data || []); setTokens(tRes.data || []); setLoading(false)
+    setScenes(sRes.data || []); setTokens(tRes.data || []); setAbilities(aRes.data || []); setLoading(false)
   }
   useEffect(() => { loadAll() }, [])
 
@@ -95,9 +103,34 @@ export default function MapPage() {
   }
   async function addToken() {
     if(!isMaster||!scene||!tokenName.trim())return
-    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:'♟'}).select().single()
+    let imageUrl = null
+    if (tokenImageFile) {
+      const safeName = tokenImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '-')
+      const objectPath = `tokens/${scene.id}/${crypto.randomUUID()}-${safeName}`
+      const { error: uploadError } = await supabase.storage.from('map-scenes').upload(objectPath, tokenImageFile, { cacheControl:'3600', upsert:false, contentType:tokenImageFile.type })
+      if (uploadError) { setError('Não consegui enviar a imagem do token: '+uploadError.message); return }
+      imageUrl = supabase.storage.from('map-scenes').getPublicUrl(objectPath).data.publicUrl
+    }
+    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:tokenEmoji,image_url:imageUrl}).select().single()
     if(e){setError('Não consegui criar o token: '+e.message);return}
-    setTokens(old=>[...old,data]);setTokenName('')
+    setTokens(old=>[...old,data]);setTokenName('');setTokenImageFile(null);setSelectedTokenId(data.id)
+  }
+  async function addAbility(e) {
+    e?.preventDefault(); const token = sceneTokens.find(t=>t.id===selectedTokenId)
+    if(!isMaster || !token || !abilityName.trim()) return
+    const {data,error:e2}=await supabase.from('map_token_abilities').insert({token_id:token.id,name:abilityName.trim()}).select().single()
+    if(e2){setError('Não consegui salvar a habilidade. Executa o SQL de combate incluído no ZIP: '+e2.message);return}
+    setAbilities(old=>[...old,data]);setAbilityName('')
+  }
+  async function useAbility(a, token) {
+    setSelectedTokenId(token.id); setAttackFx({tokenId:token.id, ability:a.name, at:Date.now()})
+    window.setTimeout(()=>setAttackFx(null), 1000)
+  }
+  async function removeToken(token) {
+    if(!isMaster || !confirm(`Remover ${token.name} do combate?`)) return
+    const {error:e}=await supabase.from('map_tokens').delete().eq('id',token.id)
+    if(e){setError('Não consegui remover o token: '+e.message);return}
+    setTokens(old=>old.filter(t=>t.id!==token.id));setAbilities(old=>old.filter(a=>a.token_id!==token.id));if(selectedTokenId===token.id)setSelectedTokenId(null)
   }
   async function moveToken(id,x,y) {
     setTokens(old=>old.map(t=>t.id===id?{...t,x,y}:t))
@@ -112,15 +145,27 @@ export default function MapPage() {
   }
   const sceneTokens = useMemo(()=>tokens.filter(t=>t.scene_id===scene?.id),[tokens,scene])
   if (loading) return <section className="map-page"><p>Carregando o mapa…</p></section>
-  if (scene) return <section className="map-page map-page--scene">
-    <header className="map-toolbar"><button className="map-button" onClick={()=>{setScene(null);setMode('explore')}}><ArrowLeft size={17}/> Voltar ao local</button><div><h1>{scene.title}</h1><p>{place?.name || PLACES.find(p=>p.id===scene.place_id)?.name}</p></div><div className="map-mode-switch"><button className={mode==='explore'?'active':''} onClick={()=>setMode('explore')}>Exploração</button><button className={mode==='combat'?'active':''} onClick={()=>setMode('combat')}><Swords size={15}/> Combate</button></div></header>
-    <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.15),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
-      {mode==='combat' && sceneTokens.map(t=><button key={t.id} className="map-token" style={{left:`${t.x}%`,top:`${t.y}%`}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);setDragging({id:t.id})}} title={isMaster?'Arrasta para mover':t.name}><span>{t.emoji||'♟'}</span><small>{t.name}</small></button>)}
-      {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
-    </div>
-    {isMaster&&mode==='combat'&&<form className="map-inline-form" onSubmit={e=>{e.preventDefault();addToken()}}><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo"/><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button><span>Arrasta os tokens para mover. As posições são salvas para todos.</span></form>}
-    {error&&<p className="map-error">{error}</p>}
-  </section>
+  if (scene) {
+    const activeToken = sceneTokens.find(t=>t.id===selectedTokenId)
+    const activeAbilities = abilities.filter(a=>a.token_id===activeToken?.id)
+    return <section className="map-page map-page--scene">
+      <header className="map-toolbar"><button className="map-button" onClick={()=>{setScene(null);setMode('explore');setSelectedTokenId(null)}}><ArrowLeft size={17}/> Voltar ao local</button><div><h1>{scene.title}</h1><p>{place?.name || PLACES.find(p=>p.id===scene.place_id)?.name}</p></div><div className="map-mode-switch"><button className={mode==='explore'?'active':''} onClick={()=>setMode('explore')}>Exploração</button><button className={mode==='combat'?'active':''} onClick={()=>setMode('combat')}><Swords size={15}/> Combate</button></div></header>
+      {mode==='combat' && <div className="combat-intro"><div><strong><Swords size={17}/> Modo combate</strong><span>Seleciona um token e usa uma habilidade para disparar a animação. O mestre pode mover as peças arrastando-as ou escolhendo um destino.</span></div><span className="combat-live">● Tabuleiro ativo</span></div>}
+      <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.12),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onClick={e=>{if(mode!=='combat'||!isMaster||!moveMode||!selectedTokenId)return;const r=e.currentTarget.getBoundingClientRect();moveToken(selectedTokenId,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)));setMoveMode(false)}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
+        {mode==='combat' && sceneTokens.map(t=><button key={t.id} className={`map-token ${selectedTokenId===t.id?'selected':''} ${attackFx?.tokenId===t.id?'attacking':''}`} style={{left:`${t.x}%`,top:`${t.y}%`}} onClick={e=>{e.stopPropagation();setSelectedTokenId(t.id);if(moveMode&&isMaster)setMoveMode(false)}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);setSelectedTokenId(t.id);setDragging({id:t.id})}} title={isMaster?'Clica para selecionar; arrasta para mover':t.name}><span className="map-token-portrait">{t.image_url?<img src={t.image_url} alt=""/>:(t.emoji||'♟')}</span><small>{t.name}</small>{attackFx?.tokenId===t.id&&<span key={attackFx.at} className="combat-impact">{attackFx.ability}<i>✦</i></span>}</button>)}
+        {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
+        {mode==='combat'&&moveMode&&<div className="combat-target-hint"><Crosshair size={15}/> Clica no tabuleiro para mover o token selecionado</div>}
+      </div>
+      {isMaster&&mode==='combat'&&<div className="combat-controls">
+        <form className="combat-add-token" onSubmit={e=>{e.preventDefault();addToken()}}><h3><UserRound size={17}/> Adicionar personagem ou inimigo</h3><div className="combat-add-row"><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo" required/><select value={tokenEmoji} onChange={e=>setTokenEmoji(e.target.value)} aria-label="Ícone do token"><option value="🦸">Herói</option><option value="🦹">Vilão</option><option value="👾">Inimigo</option><option value="🤖">Robô</option><option value="♟">Peão</option></select><label className="combat-upload">Retrato (opcional)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setTokenImageFile(e.target.files?.[0]||null)}/></label><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button></div></form>
+        <div className="combat-action-panel"><div className="combat-action-heading"><div><h3><Zap size={17}/> Habilidades de combate</h3><p>{activeToken?`Personagem selecionado: ${activeToken.name}`:'Seleciona um personagem no tabuleiro para ver as habilidades.'}</p></div>{activeToken&&<button className="map-button map-button-quiet" onClick={()=>removeToken(activeToken)} title="Remover token"><Trash2 size={15}/><X size={13}/></button>}</div>
+          {activeToken&&<><form className="combat-add-ability" onSubmit={addAbility}><input value={abilityName} onChange={e=>setAbilityName(e.target.value)} placeholder="Nome da habilidade (ex.: Teia, Raio repulsor)"/><button className="map-button" type="submit"><Plus size={15}/> Adicionar habilidade</button></form><div className="combat-ability-list">{activeAbilities.map(a=><button key={a.id} className="combat-ability-button" onClick={()=>useAbility(a,activeToken)}><Zap size={15}/>{a.name}<span>USAR</span></button>)}{!activeAbilities.length&&<p className="combat-empty-abilities">Adiciona as habilidades deste personagem. Ao clicar no nome, a animação será exibida no tabuleiro.</p>}</div><div className="combat-move-row"><button className={`map-button ${moveMode?'active':''}`} onClick={()=>setMoveMode(v=>!v)}><Crosshair size={15}/>{moveMode?'Cancelar destino':'Escolher destino no mapa'}</button><span>Ou arrasta o token diretamente. As posições são salvas no Supabase.</span></div></>}
+        </div>
+      </div>}
+      {!isMaster&&mode==='combat'&&<div className="combat-action-panel"><h3><Zap size={17}/> Habilidades</h3><p>Seleciona um personagem para ver as habilidades disponíveis.</p>{activeToken&&activeAbilities.map(a=><button key={a.id} className="combat-ability-button" onClick={()=>useAbility(a,activeToken)}><Zap size={15}/>{a.name}<span>USAR</span></button>)}</div>}
+      {error&&<p className="map-error">{error}</p>}
+    </section>
+  }
 
   if (place) {
     const placeScenes=scenes.filter(s=>s.place_id===place.id)
@@ -134,12 +179,7 @@ export default function MapPage() {
 
   return <section className="map-page"><header className="map-toolbar"><div><h1>Mundo de Batalha</h1><p>Escolhe um ponto do mapa para entrar no local.</p></div>{isMaster&&<span className="map-master-label">Modo mestre: controla os acessos</span>}</header>
     {error&&<p className="map-error">{error}</p>}
-    <div className="map-world-viewport" aria-label="Mapa completo da cidade; role para explorar">
-      <div className="map-world">
-        <img className="map-world-image" src="/mapa-mundo.png" alt="Mapa ilustrado completo da cidade" draggable="false" />
-        <div className="map-world-markers">{places.map(p=><button key={p.id} className={`map-place ${p.locked?'locked':''}`} style={{left:`${p.x}%`,top:`${p.y}%`}} onClick={()=>setSelected(p.id)} title={p.name}><span className="map-place-icon">{p.locked&&!isMaster?<LockKeyhole size={16}/>:<MapPin size={17}/>}</span><span className="map-place-name">{p.name}</span>{isMaster&&<span className="map-place-lock" onClick={e=>{e.stopPropagation();togglePlace(p)}}>{p.locked?'Bloqueado':'Liberado'}</span>}</button>)}</div>
-      </div>
-    </div>
+    <div className="map-world" style={{backgroundImage:'url("/mapa-mundo.png")'}}>{places.map(p=><button key={p.id} className={`map-place ${p.locked?'locked':''}`} style={{left:`${p.x}%`,top:`${p.y}%`}} onClick={()=>setSelected(p.id)} title={p.name}><span className="map-place-icon">{p.locked&&!isMaster?<LockKeyhole size={16}/>:<MapPin size={17}/>}</span><span className="map-place-name">{p.name}</span>{isMaster&&<span className="map-place-lock" onClick={e=>{e.stopPropagation();togglePlace(p)}}>{p.locked?'Bloqueado':'Liberado'}</span>}</button>)}</div>
     <p className="map-footnote">{isMaster?'Clica num local para editar suas cenas. Usa o status no marcador para liberar ou bloquear o acesso.':'Locais bloqueados aparecem com cadeado e podem ser liberados pelo mestre.'}</p>
   </section>
 }

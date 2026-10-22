@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, LockKeyhole, MapPin, Plus, Swords, ImagePlus, Trash2, Zap, Crosshair, UserRound, X } from 'lucide-react'
+import { ArrowLeft, LockKeyhole, MapPin, Plus, Swords, ImagePlus, Trash2, Zap, Crosshair, UserRound, X, ScanSearch, Play, Pencil, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
 import { useMaster } from '../state/MasterContext.jsx'
 import '../styles/map-page.css'
@@ -38,9 +38,11 @@ export default function MapPage() {
   const [tokenName, setTokenName] = useState('')
   const [tokenEmoji, setTokenEmoji] = useState('🦸')
   const [tokenImageFile, setTokenImageFile] = useState(null)
-  const [spriteCols, setSpriteCols] = useState(7)
-  const [spriteRows, setSpriteRows] = useState(5)
-  const [spriteFrames, setSpriteFrames] = useState(7)
+  const [spriteSheetFile, setSpriteSheetFile] = useState(null)
+  const [spriteFrames, setSpriteFrames] = useState([])
+  const [spriteImportError, setSpriteImportError] = useState('')
+  const [playingSpriteId, setPlayingSpriteId] = useState(null)
+  const [spriteScale, setSpriteScale] = useState(1)
   const [selectedTokenId, setSelectedTokenId] = useState(null)
   const [abilityName, setAbilityName] = useState('')
   const [abilities, setAbilities] = useState([])
@@ -104,8 +106,58 @@ export default function MapPage() {
     if(e){setError('Não consegui marcar o mapa de combate: '+e.message);return}
     setScenes(old=>old.map(x=>x.id===s.id?{...x,scene_type:'combat'}:x));setScene({...s,scene_type:'combat'});setMode('combat')
   }
+  async function analyzeSpriteSheet(file) {
+    setSpriteSheetFile(file || null); setSpriteFrames([]); setSpriteImportError(''); setPlayingSpriteId(null)
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setSpriteImportError('Escolhe uma imagem PNG, JPG ou WebP.'); return }
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d', {willReadFrequently:true}); ctx.drawImage(img,0,0)
+        const {data,width,height}=ctx.getImageData(0,0,canvas.width,canvas.height)
+        const total=width*height, mask=new Uint8Array(total), seen=new Uint8Array(total)
+        // Treat transparency as background; for opaque black-background sheets, black pixels are also background.
+        for(let i=0,pix=0;i<data.length;i+=4,pix++) {
+          const a=data[i+3], r=data[i],g=data[i+1],b=data[i+2]
+          mask[pix]=(a>24 && (a<250 || r+g+b>42))?1:0
+        }
+        const components=[]; const queue=new Int32Array(total)
+        for(let start=0;start<total;start++) {
+          if(!mask[start]||seen[start]) continue
+          let head=0,tail=0;queue[tail++]=start;seen[start]=1
+          let minX=width,minY=height,maxX=0,maxY=0,count=0
+          while(head<tail) {
+            const q=queue[head++],x=q%width,y=(q/width)|0;count++
+            if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y
+            const neighbors=[]
+            if(x>0)neighbors.push(q-1);if(x<width-1)neighbors.push(q+1);if(y>0)neighbors.push(q-width);if(y<height-1)neighbors.push(q+width)
+            for(const n of neighbors) if(mask[n]&&!seen[n]){seen[n]=1;queue[tail++]=n}
+          }
+          const w=maxX-minX+1,h=maxY-minY+1,area=w*h
+          if(count>=90 && area>=180 && w>=8 && h>=8 && area<total*.45) components.push({x:minX,y:minY,w,h,count})
+        }
+        components.sort((a,b)=>a.y-b.y || a.x-b.x)
+        // Very small detached details are excluded; each detected component becomes a testable preview.
+        const frames=components.slice(0,160).map((c,i)=>{
+          const crop=document.createElement('canvas');crop.width=c.w;crop.height=c.h
+          crop.getContext('2d').drawImage(canvas,c.x,c.y,c.w,c.h,0,0,c.w,c.h)
+          return {id:`sprite-${i+1}`,name:`Animação ${i+1}`,url:crop.toDataURL('image/png'),width:c.w,height:c.h,x:c.x,y:c.y}
+        })
+        setSpriteFrames(frames)
+        if(!frames.length)setSpriteImportError('Não encontrei elementos separados. A imagem pode ter fundo opaco ou os sprites podem estar encostados. O arquivo foi carregado, mas não consegui separar automaticamente.')
+      } catch(err) { setSpriteImportError('Não consegui analisar essa imagem. Tenta PNG com transparência.'); }
+      URL.revokeObjectURL(url)
+    }
+    img.onerror=()=>{setSpriteImportError('Não consegui abrir a imagem.');URL.revokeObjectURL(url)}
+    img.src=url
+  }
+  function chooseSpriteAsToken(frame) {
+    const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);c.toBlob(blob=>{if(blob)setTokenImageFile(new File([blob],`${frame.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`,{type:'image/png'}))},'image/png')};img.src=frame.url
+  }
   async function addToken() {
-    if(!isMaster||!scene||!tokenName.trim()) { setError('Para adicionar tokens, entra no site com a conta do mestre e abre uma cena no modo Combate.'); return }
+    if(!isMaster||!scene||!tokenName.trim())return
     let imageUrl = null
     if (tokenImageFile) {
       const safeName = tokenImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '-')
@@ -114,7 +166,7 @@ export default function MapPage() {
       if (uploadError) { setError('Não consegui enviar a imagem do token: '+uploadError.message); return }
       imageUrl = supabase.storage.from('map-scenes').getPublicUrl(objectPath).data.publicUrl
     }
-    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:tokenEmoji,image_url:imageUrl,sprite_cols:Number(spriteCols)||1,sprite_rows:Number(spriteRows)||1,sprite_frames:Number(spriteFrames)||1}).select().single()
+    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:tokenEmoji,image_url:imageUrl}).select().single()
     if(e){setError('Não consegui criar o token: '+e.message);return}
     setTokens(old=>[...old,data]);setTokenName('');setTokenImageFile(null);setSelectedTokenId(data.id)
   }
@@ -155,14 +207,20 @@ export default function MapPage() {
       <header className="map-toolbar"><button className="map-button" onClick={()=>{setScene(null);setMode('explore');setSelectedTokenId(null)}}><ArrowLeft size={17}/> Voltar ao local</button><div><h1>{scene.title}</h1><p>{place?.name || PLACES.find(p=>p.id===scene.place_id)?.name}</p></div><div className="map-mode-switch"><button className={mode==='explore'?'active':''} onClick={()=>setMode('explore')}>Exploração</button><button className={mode==='combat'?'active':''} onClick={()=>setMode('combat')}><Swords size={15}/> Combate</button></div></header>
       {mode==='combat' && <div className="combat-intro"><div><strong><Swords size={17}/> Modo combate</strong><span>Seleciona um token e usa uma habilidade para disparar a animação. O mestre pode mover as peças arrastando-as ou escolhendo um destino.</span></div><span className="combat-live">● Tabuleiro ativo</span></div>}
       <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.12),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onClick={e=>{if(mode!=='combat'||!isMaster||!moveMode||!selectedTokenId)return;const r=e.currentTarget.getBoundingClientRect();moveToken(selectedTokenId,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)));setMoveMode(false)}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
-        {mode==='combat' && sceneTokens.map(t=><button key={t.id} className={`map-token ${selectedTokenId===t.id?'selected':''} ${attackFx?.tokenId===t.id?'attacking':''}`} style={{left:`${t.x}%`,top:`${t.y}%`}} onClick={e=>{e.stopPropagation();setSelectedTokenId(t.id);if(moveMode&&isMaster)setMoveMode(false)}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);setSelectedTokenId(t.id);setDragging({id:t.id})}} title={isMaster?'Clica para selecionar; arrasta para mover':t.name}><span className="map-token-portrait">{t.image_url?<span className={`map-sprite ${attackFx?.tokenId===t.id?'playing':''}`} style={{backgroundImage:`url("${t.image_url}")`, '--sprite-cols':t.sprite_cols||1, '--sprite-rows':t.sprite_rows||1, '--sprite-frames':t.sprite_frames||1}}/>:(t.emoji||'♟')}</span><small>{t.name}</small>{attackFx?.tokenId===t.id&&<span key={attackFx.at} className="combat-impact">{attackFx.ability}<i>✦</i></span>}</button>)}
+        {mode==='combat' && sceneTokens.map(t=><button key={t.id} className={`map-token ${selectedTokenId===t.id?'selected':''} ${attackFx?.tokenId===t.id?'attacking':''}`} style={{left:`${t.x}%`,top:`${t.y}%`}} onClick={e=>{e.stopPropagation();setSelectedTokenId(t.id);if(moveMode&&isMaster)setMoveMode(false)}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);setSelectedTokenId(t.id);setDragging({id:t.id})}} title={isMaster?'Clica para selecionar; arrasta para mover':t.name}><span className="map-token-portrait">{t.image_url?<img src={t.image_url} alt=""/>:(t.emoji||'♟')}</span><small>{t.name}</small>{attackFx?.tokenId===t.id&&<span key={attackFx.at} className="combat-impact">{attackFx.ability}<i>✦</i></span>}</button>)}
         {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
         {mode==='combat'&&moveMode&&<div className="combat-target-hint"><Crosshair size={15}/> Clica no tabuleiro para mover o token selecionado</div>}
       </div>
       {isMaster&&mode==='combat'&&<div className="combat-controls">
-        <form className="combat-add-token" onSubmit={e=>{e.preventDefault();addToken()}}><h3><UserRound size={17}/> Adicionar personagem ou inimigo</h3><div className="combat-add-row"><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo" required/><select value={tokenEmoji} onChange={e=>setTokenEmoji(e.target.value)} aria-label="Ícone do token"><option value="🦸">Herói</option><option value="🦹">Vilão</option><option value="👾">Inimigo</option><option value="🤖">Robô</option><option value="♟">Peão</option></select><label className="combat-upload">Sprite sheet (PNG/JPG)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setTokenImageFile(e.target.files?.[0]||null)}/></label><label className="sprite-config">Colunas<input type="number" min="1" max="30" value={spriteCols} onChange={e=>setSpriteCols(e.target.value)}/></label><label className="sprite-config">Linhas<input type="number" min="1" max="30" value={spriteRows} onChange={e=>setSpriteRows(e.target.value)}/></label><label className="sprite-config">Quadros da animação<input type="number" min="1" max="900" value={spriteFrames} onChange={e=>setSpriteFrames(e.target.value)}/></label><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button></div></form>
+        <form className="combat-add-token" onSubmit={e=>{e.preventDefault();addToken()}}><h3><UserRound size={17}/> Adicionar personagem ou inimigo</h3><div className="combat-add-row"><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo" required/><select value={tokenEmoji} onChange={e=>setTokenEmoji(e.target.value)} aria-label="Ícone do token"><option value="🦸">Herói</option><option value="🦹">Vilão</option><option value="👾">Inimigo</option><option value="🤖">Robô</option><option value="♟">Peão</option></select><label className="combat-upload">Retrato (opcional)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setTokenImageFile(e.target.files?.[0]||null)}/></label><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button></div></form>
+        <section className="sprite-importer">
+          <div className="sprite-importer-heading"><div><h3><ScanSearch size={17}/> Importador automático de sprite sheet</h3><p>Envia uma única imagem. O site tenta separar os elementos visuais para testar e renomear.</p></div><label className="map-button sprite-file-button"><Upload size={15}/> Escolher imagem<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>analyzeSpriteSheet(e.target.files?.[0]||null)}/></label></div>
+          {spriteSheetFile&&<div className="sprite-import-meta">{spriteSheetFile.name} · {spriteFrames.length} elemento(s) detectado(s) <label>Escala de prévia <input type="range" min="0.5" max="2.5" step="0.1" value={spriteScale} onChange={e=>setSpriteScale(Number(e.target.value))}/>{Math.round(spriteScale*100)}%</label></div>}
+          {spriteImportError&&<p className="sprite-import-error">{spriteImportError}</p>}
+          {spriteFrames.length>0&&<div className="sprite-frame-grid">{spriteFrames.map((f,i)=><article className="sprite-frame-card" key={f.id}><div className="sprite-frame-preview"><img src={f.url} alt={f.name} style={{transform:`scale(${spriteScale})`}}/></div><input aria-label={`Nome da animação ${i+1}`} value={f.name} onChange={e=>setSpriteFrames(old=>old.map(x=>x.id===f.id?{...x,name:e.target.value}:x))}/><small>{f.width} × {f.height}px</small><div><button type="button" className="map-button" onClick={()=>setPlayingSpriteId(playingSpriteId===f.id?null:f.id)}><Play size={13}/>{playingSpriteId===f.id?'Parar':'Testar'}</button><button type="button" className="map-button" onClick={()=>{chooseSpriteAsToken(f);setTokenName(v=>v||'Homem de Ferro')}}>Usar como token</button></div>{playingSpriteId===f.id&&<div className="sprite-test-stage"><img src={f.url} alt="Prévia da animação"/></div>}</article>)}</div>}
+        </section>
         <div className="combat-action-panel"><div className="combat-action-heading"><div><h3><Zap size={17}/> Habilidades de combate</h3><p>{activeToken?`Personagem selecionado: ${activeToken.name}`:'Seleciona um personagem no tabuleiro para ver as habilidades.'}</p></div>{activeToken&&<button className="map-button map-button-quiet" onClick={()=>removeToken(activeToken)} title="Remover token"><Trash2 size={15}/><X size={13}/></button>}</div>
-          {activeToken&&<><form className="combat-add-ability" onSubmit={addAbility}><input value={abilityName} onChange={e=>setAbilityName(e.target.value)} placeholder="Nome da habilidade (ex.: Teia, Raio repulsor)"/><button className="map-button" type="submit"><Plus size={15}/> Adicionar habilidade</button></form><div className="combat-ability-list">{activeAbilities.map(a=><button key={a.id} className="combat-ability-button" onClick={()=>useAbility(a,activeToken)}><Zap size={15}/>{a.name}<span>USAR</span></button>)}{!activeAbilities.length&&<p className="combat-empty-abilities">Adiciona habilidades para disparar a animação da sprite sheet configurada no token. Cada habilidade usa os quadros definidos no cadastro.</p>}</div><div className="combat-move-row"><button className={`map-button ${moveMode?'active':''}`} onClick={()=>setMoveMode(v=>!v)}><Crosshair size={15}/>{moveMode?'Cancelar destino':'Escolher destino no mapa'}</button><span>Ou arrasta o token diretamente. As posições são salvas no Supabase.</span></div></>}
+          {activeToken&&<><form className="combat-add-ability" onSubmit={addAbility}><input value={abilityName} onChange={e=>setAbilityName(e.target.value)} placeholder="Nome da habilidade (ex.: Teia, Raio repulsor)"/><button className="map-button" type="submit"><Plus size={15}/> Adicionar habilidade</button></form><div className="combat-ability-list">{activeAbilities.map(a=><button key={a.id} className="combat-ability-button" onClick={()=>useAbility(a,activeToken)}><Zap size={15}/>{a.name}<span>USAR</span></button>)}{!activeAbilities.length&&<p className="combat-empty-abilities">Adiciona as habilidades deste personagem. Ao clicar no nome, a animação será exibida no tabuleiro.</p>}</div><div className="combat-move-row"><button className={`map-button ${moveMode?'active':''}`} onClick={()=>setMoveMode(v=>!v)}><Crosshair size={15}/>{moveMode?'Cancelar destino':'Escolher destino no mapa'}</button><span>Ou arrasta o token diretamente. As posições são salvas no Supabase.</span></div></>}
         </div>
       </div>}
       {!isMaster&&mode==='combat'&&<div className="combat-action-panel"><h3><Zap size={17}/> Habilidades</h3><p>Seleciona um personagem para ver as habilidades disponíveis.</p>{activeToken&&activeAbilities.map(a=><button key={a.id} className="combat-ability-button" onClick={()=>useAbility(a,activeToken)}><Zap size={15}/>{a.name}<span>USAR</span></button>)}</div>}

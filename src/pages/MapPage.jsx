@@ -38,11 +38,10 @@ export default function MapPage() {
   const [tokenName, setTokenName] = useState('')
   const [tokenEmoji, setTokenEmoji] = useState('🦸')
   const [tokenImageFile, setTokenImageFile] = useState(null)
-  const [spriteSheetFile, setSpriteSheetFile] = useState(null)
-  const [spriteFrames, setSpriteFrames] = useState([])
-  const [spriteImportError, setSpriteImportError] = useState('')
-  const [playingSpriteId, setPlayingSpriteId] = useState(null)
-  const [spriteScale, setSpriteScale] = useState(1)
+  const [animationPack, setAnimationPack] = useState(() => { try { return JSON.parse(localStorage.getItem('mb-animation-pack-v1') || 'null') } catch { return null } })
+  const [animationImportError, setAnimationImportError] = useState('')
+  const [animationPreviewId, setAnimationPreviewId] = useState('')
+  const [animationFrameIndex, setAnimationFrameIndex] = useState(0)
   const [showSpriteImporter, setShowSpriteImporter] = useState(false)
   const [tokenScale, setTokenScale] = useState(1)
   const [selectedTokenId, setSelectedTokenId] = useState(null)
@@ -108,55 +107,71 @@ export default function MapPage() {
     if(e){setError('Não consegui marcar o mapa de combate: '+e.message);return}
     setScenes(old=>old.map(x=>x.id===s.id?{...x,scene_type:'combat'}:x));setScene({...s,scene_type:'combat'});setMode('combat')
   }
-  async function analyzeSpriteSheet(file) {
-    setSpriteSheetFile(file || null); setSpriteFrames([]); setSpriteImportError(''); setPlayingSpriteId(null)
-    if (!file) return
-    if (!file.type.startsWith('image/')) { setSpriteImportError('Escolhe uma imagem PNG, JPG ou WebP.'); return }
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d', {willReadFrequently:true}); ctx.drawImage(img,0,0)
-        const {data,width,height}=ctx.getImageData(0,0,canvas.width,canvas.height)
-        const total=width*height, mask=new Uint8Array(total), seen=new Uint8Array(total)
-        // Treat transparency as background; for opaque black-background sheets, black pixels are also background.
-        for(let i=0,pix=0;i<data.length;i+=4,pix++) {
-          const a=data[i+3], r=data[i],g=data[i+1],b=data[i+2]
-          mask[pix]=(a>24 && (a<250 || r+g+b>42))?1:0
-        }
-        const components=[]; const queue=new Int32Array(total)
-        for(let start=0;start<total;start++) {
-          if(!mask[start]||seen[start]) continue
-          let head=0,tail=0;queue[tail++]=start;seen[start]=1
-          let minX=width,minY=height,maxX=0,maxY=0,count=0
-          while(head<tail) {
-            const q=queue[head++],x=q%width,y=(q/width)|0;count++
-            if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y
-            const neighbors=[]
-            if(x>0)neighbors.push(q-1);if(x<width-1)neighbors.push(q+1);if(y>0)neighbors.push(q-width);if(y<height-1)neighbors.push(q+width)
-            for(const n of neighbors) if(mask[n]&&!seen[n]){seen[n]=1;queue[tail++]=n}
-          }
-          const w=maxX-minX+1,h=maxY-minY+1,area=w*h
-          if(count>=90 && area>=180 && w>=8 && h>=8 && area<total*.45) components.push({x:minX,y:minY,w,h,count})
-        }
-        components.sort((a,b)=>a.y-b.y || a.x-b.x)
-        // Very small detached details are excluded; each detected component becomes a testable preview.
-        const frames=components.slice(0,160).map((c,i)=>{
-          const crop=document.createElement('canvas');crop.width=c.w;crop.height=c.h
-          crop.getContext('2d').drawImage(canvas,c.x,c.y,c.w,c.h,0,0,c.w,c.h)
-          return {id:`sprite-${i+1}`,name:`Animação ${i+1}`,url:crop.toDataURL('image/png'),width:c.w,height:c.h,x:c.x,y:c.y}
-        })
-        setSpriteFrames(frames)
-        if(!frames.length)setSpriteImportError('Não encontrei elementos separados. A imagem pode ter fundo opaco ou os sprites podem estar encostados. O arquivo foi carregado, mas não consegui separar automaticamente.')
-      } catch(err) { setSpriteImportError('Não consegui analisar essa imagem. Tenta PNG com transparência.'); }
-      URL.revokeObjectURL(url)
-    }
-    img.onerror=()=>{setSpriteImportError('Não consegui abrir a imagem.');URL.revokeObjectURL(url)}
-    img.src=url
+  function bytesToDataUrl(bytes, mime='image/png') {
+    let binary=''; const chunk=0x8000
+    for(let i=0;i<bytes.length;i+=chunk) binary += String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)))
+    return `data:${mime};base64,${btoa(binary)}`
   }
-  function chooseSpriteAsToken(frame) {
-    const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);c.toBlob(blob=>{if(blob)setTokenImageFile(new File([blob],`${frame.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`,{type:'image/png'}))},'image/png')};img.src=frame.url
+  async function readZipEntries(buffer) {
+    const view = new DataView(buffer); const bytes = new Uint8Array(buffer); let eocd=-1
+    for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break}}
+    if(eocd<0) throw new Error('O arquivo não parece ser um ZIP válido.')
+    const count=view.getUint16(eocd+10,true), centralOffset=view.getUint32(eocd+16,true); let pos=centralOffset; const entries={}
+    for(let i=0;i<count;i++){if(view.getUint32(pos,true)!==0x02014b50)break;const method=view.getUint16(pos+10,true), compressedSize=view.getUint32(pos+20,true), nameLen=view.getUint16(pos+28,true), extraLen=view.getUint16(pos+30,true), commentLen=view.getUint16(pos+32,true), localOffset=view.getUint32(pos+42,true);const name=new TextDecoder().decode(bytes.slice(pos+46,pos+46+nameLen));const localNameLen=view.getUint16(localOffset+26,true),localExtraLen=view.getUint16(localOffset+28,true),dataStart=localOffset+30+localNameLen+localExtraLen;const compressed=bytes.slice(dataStart,dataStart+compressedSize);let content;if(method===0)content=compressed;else if(method===8){if(typeof DecompressionStream==='undefined')throw new Error('Este navegador não suporta descompactação ZIP. Atualiza o Chrome.');const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));content=new Uint8Array(await new Response(stream).arrayBuffer())}else {pos+=46+nameLen+extraLen+commentLen;continue}entries[name]=content;pos+=46+nameLen+extraLen+commentLen}
+    return entries
+  }
+  async function importAnimationPack(file) {
+    setAnimationImportError(''); setAnimationPreviewId(''); setAnimationFrameIndex(0)
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.zip')) { setAnimationImportError('Escolhe o pacote ZIP de animações, não a sprite sheet original.'); return }
+    try {
+      const archive = await readZipEntries(await file.arrayBuffer())
+      const catalogEntry = Object.entries(archive).find(([name]) => name.toLowerCase().endsWith('animation_catalog.json'))
+      if (!catalogEntry) throw new Error('Não encontrei animation_catalog.json dentro do ZIP.')
+      const catalog = JSON.parse(new TextDecoder().decode(catalogEntry[1]))
+      if (!Array.isArray(catalog.sprites) || !Array.isArray(catalog.animations)) throw new Error('O catálogo não contém sprites e animações no formato esperado.')
+      const root = catalogEntry[0].slice(0, catalogEntry[0].lastIndexOf('/') + 1)
+      const sprites = {}
+      for (const item of catalog.sprites) {
+        const entry = archive[root + item.file] || archive[item.file] || Object.entries(archive).find(([name]) => name.endsWith('/' + item.file))?.[1]
+        if (entry) sprites[item.id] = { ...item, url: bytesToDataUrl(entry) }
+      }
+      const pack = { character: catalog.character, animations: catalog.animations, sprites, importedAt: new Date().toISOString() }
+      if (!Object.keys(sprites).length) throw new Error('O catálogo foi encontrado, mas nenhum PNG foi localizado.')
+      localStorage.setItem('mb-animation-pack-v1', JSON.stringify(pack))
+      setAnimationPack(pack)
+      setAnimationImportError(`Pacote importado: ${Object.keys(sprites).length} recursos e ${catalog.animations.length} comandos de animação.`)
+    } catch (err) { setAnimationImportError(err?.message || 'Não consegui ler o pacote ZIP.') }
+  }
+  function findAnimationForAbility(name) {
+    if (!animationPack) return null
+    const text = (name || '').toLowerCase()
+    const aliases = [
+      { test: /repuls|raio|laser|disparo/, ids: ['repulsor_hand','unibeam'] },
+      { test: /uni.?beam|peito|feixe/, ids: ['unibeam'] },
+      { test: /m[ií]ssil|foguete|rajada/, ids: ['missile_barrage'] },
+      { test: /carga|defesa|escudo|bloque/, ids: ['charge_or_deflect'] },
+      { test: /impact|explos|acert/, ids: ['impact'] },
+    ]
+    const rule = aliases.find(x => x.test.test(text))
+    const ids = rule?.ids || []
+    return animationPack.animations.find(a => ids.includes(a.id)) || animationPack.animations.find(a => a.id === 'repulsor_hand') || null
+  }
+  function playCatalogAnimation(animation, token) {
+    if (!animationPack || !animation) return
+    const frames = (animation.frames || []).map(id => animationPack.sprites[id]?.url).filter(Boolean)
+    if (!frames.length) { setAttackFx({tokenId:token.id, ability:animation.label, at:Date.now()}); window.setTimeout(()=>setAttackFx(null),900); return }
+    setSelectedTokenId(token.id)
+    const started = Date.now()
+    setAttackFx({ tokenId:token.id, ability:animation.label, at:started, frameUrl:frames[0], sequence:frames })
+    let i=0
+    const timer=window.setInterval(()=>{
+      i++
+      if(i>=frames.length && !animation.loop) { window.clearInterval(timer); setAttackFx(null); return }
+      const next=frames[i%frames.length]
+      setAttackFx(old=>old?.at===started?{...old,frameUrl:next}:old)
+    }, Math.max(70, 1000 / Math.max(1, animation.fps || 8)))
+    window.setTimeout(()=>{window.clearInterval(timer);setAttackFx(old=>old?.at===started?null:old)}, animation.loop ? 1800 : Math.max(700, frames.length * 1000 / Math.max(1, animation.fps || 8)))
   }
   async function addToken() {
     if(!isMaster||!scene||!tokenName.trim())return
@@ -180,8 +195,9 @@ export default function MapPage() {
     setAbilities(old=>[...old,data]);setAbilityName('')
   }
   async function useAbility(a, token) {
-    setSelectedTokenId(token.id); setAttackFx({tokenId:token.id, ability:a.name, at:Date.now()})
-    window.setTimeout(()=>setAttackFx(null), 1000)
+    const animation = findAnimationForAbility(a.name)
+    if (animation) playCatalogAnimation(animation, token)
+    else { setSelectedTokenId(token.id); setAttackFx({tokenId:token.id, ability:a.name, at:Date.now()}); window.setTimeout(()=>setAttackFx(null), 1000) }
   }
   async function removeToken(token) {
     if(!isMaster || !confirm(`Remover ${token.name} do combate?`)) return
@@ -222,19 +238,20 @@ export default function MapPage() {
       {mode==='combat' && <div className="combat-intro"><div><strong><Swords size={17}/> Modo combate</strong><span>Seleciona um token e usa uma habilidade para disparar a animação. O mestre pode mover as peças arrastando-as ou escolhendo um destino.</span></div><span className="combat-live">● Tabuleiro ativo</span></div>}
       <div className={mode==='combat'?'combat-stage-layout':'scene-stage-layout'}>
       <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.12),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onClick={e=>{if(mode!=='combat'||!isMaster||!moveMode||!selectedTokenId)return;const r=e.currentTarget.getBoundingClientRect();moveToken(selectedTokenId,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)));setMoveMode(false)}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
-        {mode==='combat' && sceneTokens.map(t=><button key={t.id} className={`map-token ${selectedTokenId===t.id?'selected':''} ${attackFx?.tokenId===t.id?'attacking':''}`} style={{left:`${t.x}%`,top:`${t.y}%`, '--token-scale': tokenScale}} onClick={e=>{e.stopPropagation();setSelectedTokenId(t.id);if(moveMode&&isMaster)setMoveMode(false)}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);setSelectedTokenId(t.id);setDragging({id:t.id})}} title={isMaster?'Clica para selecionar; arrasta para mover':t.name}><span className="map-token-portrait">{t.image_url?<img src={t.image_url} alt=""/>:(t.emoji||'♟')}</span><small>{t.name}</small>{attackFx?.tokenId===t.id&&<span key={attackFx.at} className="combat-impact">{attackFx.ability}<i>✦</i></span>}</button>)}
+        {mode==='combat' && sceneTokens.map(t=><button key={t.id} className={`map-token ${selectedTokenId===t.id?'selected':''} ${attackFx?.tokenId===t.id?'attacking':''}`} style={{left:`${t.x}%`,top:`${t.y}%`, '--token-scale': tokenScale}} onClick={e=>{e.stopPropagation();setSelectedTokenId(t.id);if(moveMode&&isMaster)setMoveMode(false)}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);setSelectedTokenId(t.id);setDragging({id:t.id})}} title={isMaster?'Clica para selecionar; arrasta para mover':t.name}><span className="map-token-portrait">{attackFx?.tokenId===t.id&&attackFx?.frameUrl?<img className="combat-animation-frame" src={attackFx.frameUrl} alt="Animação em execução"/>:t.image_url?<img src={t.image_url} alt=""/>:(t.emoji||'♟')}</span><small>{t.name}</small>{attackFx?.tokenId===t.id&&<span key={attackFx.at} className="combat-impact">{attackFx.ability}<i>✦</i></span>}</button>)}
         {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
         {mode==='combat'&&moveMode&&<div className="combat-target-hint"><Crosshair size={15}/> Clica no tabuleiro para mover o token selecionado</div>}
       </div>
       {mode==='combat'&&<aside className="combat-hud">
         {isMaster&&<form className="combat-add-token" onSubmit={e=>{e.preventDefault();addToken()}}><h3><UserRound size={17}/> Novo personagem</h3><div className="combat-add-row"><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo" required/><select value={tokenEmoji} onChange={e=>setTokenEmoji(e.target.value)} aria-label="Ícone do token"><option value="🦸">Herói</option><option value="🦹">Vilão</option><option value="👾">Inimigo</option><option value="🤖">Robô</option><option value="♟">Peão</option></select><label className="combat-upload">Imagem do token<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setTokenImageFile(e.target.files?.[0]||null)}/></label><button className="map-button" type="submit"><Plus size={16}/> Adicionar</button></div></form>}
-        {isMaster&&<section className="sprite-importer">
-          <button type="button" className="sprite-import-toggle" onClick={()=>setShowSpriteImporter(v=>!v)}><ScanSearch size={17}/><span><strong>Importar personagem e animações</strong><small>Envia uma sprite sheet para analisar</small></span><span className="sprite-toggle-mark">{showSpriteImporter?'−':'+'}</span></button>
+        {isMaster&&<section className="sprite-importer animation-pack-importer">
+          <button type="button" className="sprite-import-toggle" onClick={()=>setShowSpriteImporter(v=>!v)}><ScanSearch size={17}/><span><strong>Motor de animações</strong><small>{animationPack ? `${animationPack.character?.name || 'Personagem'} · ${animationPack.animations.length} comandos` : 'Importa um pacote ZIP pronto'}</small></span><span className="sprite-toggle-mark">{showSpriteImporter?'−':'+'}</span></button>
           {showSpriteImporter&&<div className="sprite-importer-content">
-          <div className="sprite-importer-heading"><div><h3><ScanSearch size={17}/> Importador automático de sprite sheet</h3><p>Envia uma única imagem. O site tenta separar os elementos visuais para testar e renomear.</p></div><label className="map-button sprite-file-button"><Upload size={15}/> Escolher imagem<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>analyzeSpriteSheet(e.target.files?.[0]||null)}/></label></div>
-          {spriteSheetFile&&<div className="sprite-import-meta">{spriteSheetFile.name} · {spriteFrames.length} elemento(s) detectado(s) <label>Escala de prévia <input type="range" min="0.5" max="2.5" step="0.1" value={spriteScale} onChange={e=>setSpriteScale(Number(e.target.value))}/>{Math.round(spriteScale*100)}%</label></div>}
-          {spriteImportError&&<p className="sprite-import-error">{spriteImportError}</p>}
-          {spriteFrames.length>0&&<div className="sprite-frame-grid">{spriteFrames.map((f,i)=><article className="sprite-frame-card" key={f.id}><div className="sprite-frame-preview"><img src={f.url} alt={f.name} style={{transform:`scale(${spriteScale})`}}/></div><input aria-label={`Nome da animação ${i+1}`} value={f.name} onChange={e=>setSpriteFrames(old=>old.map(x=>x.id===f.id?{...x,name:e.target.value}:x))}/><small>{f.width} × {f.height}px</small><div><button type="button" className="map-button" onClick={()=>setPlayingSpriteId(playingSpriteId===f.id?null:f.id)}><Play size={13}/>{playingSpriteId===f.id?'Parar':'Testar'}</button><button type="button" className="map-button" onClick={()=>{chooseSpriteAsToken(f);setTokenName(v=>v||'Homem de Ferro')}}>Usar como token</button></div>{playingSpriteId===f.id&&<div className="sprite-test-stage"><img src={f.url} alt="Prévia da animação"/></div>}</article>)}</div>}
+            <div className="sprite-importer-heading"><div><h3><Upload size={17}/> Importar pacote de animações</h3><p>Seleciona o ZIP gerado para o Mundo de Batalha. O site lê o catálogo e os PNGs sem pedir a sprite sheet original.</p></div><label className="map-button sprite-file-button"><Upload size={15}/> Escolher ZIP<input type="file" accept=".zip,application/zip" onChange={e=>importAnimationPack(e.target.files?.[0]||null)}/></label></div>
+            {animationImportError&&<p className="sprite-import-error">{animationImportError}</p>}
+            {animationPack&&<><div className="animation-pack-status"><strong>{animationPack.character?.name || 'Personagem importado'}</strong><span>{Object.keys(animationPack.sprites).length} recursos carregados · {animationPack.animations.length} animações/comandos</span><button type="button" className="map-button" onClick={()=>{localStorage.removeItem('mb-animation-pack-v1');setAnimationPack(null);setAnimationImportError('Pacote removido deste navegador.')}}>Remover pacote</button></div>
+            <div className="animation-test-row"><label>Testar comando<select value={animationPreviewId} onChange={e=>{setAnimationPreviewId(e.target.value);setAnimationFrameIndex(0)}}><option value="">Seleciona uma animação</option>{animationPack.animations.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}</select></label><button type="button" className="map-button" onClick={()=>{const a=animationPack.animations.find(x=>x.id===animationPreviewId);if(a&&activeToken)playCatalogAnimation(a,activeToken);else if(a){const frames=(a.frames||[]).map(id=>animationPack.sprites[id]?.url).filter(Boolean);if(frames[0])setAttackFx({tokenId:'preview',ability:a.label,at:Date.now(),frameUrl:frames[0]})}}}><Play size={14}/> Executar no personagem selecionado</button></div>
+            <div className="animation-command-list">{animationPack.animations.map(a=><button key={a.id} type="button" className="animation-command-chip" onClick={()=>{setAnimationPreviewId(a.id);setAnimationFrameIndex(0);if(activeToken)playCatalogAnimation(a,activeToken)}}><strong>{a.label}</strong><small>{a.trigger} · {(a.frames||[]).length} recurso(s)</small></button>)}</div></>}
           </div>}
         </section>}
         <div className="combat-action-panel"><div className="combat-action-heading"><div><h3><Zap size={17}/> Habilidades de combate</h3><p>{activeToken?`Personagem selecionado: ${activeToken.name}`:'Seleciona um personagem no tabuleiro para ver as habilidades.'}</p></div>{activeToken&&<button className="map-button map-button-quiet" onClick={()=>removeToken(activeToken)} title="Remover token"><Trash2 size={15}/><X size={13}/></button>}</div>

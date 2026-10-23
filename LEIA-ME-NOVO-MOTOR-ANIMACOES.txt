@@ -1,0 +1,23 @@
+MUNDO DE BATALHA — NOVO MOTOR DE ANIMAÇÕES
+
+O que mudou
+- O importador antigo de sprite sheet e a galeria de recortes foram removidos do MapPage.
+- O painel Motor de animações recebe o pacote ZIP produzido para o Mundo de Batalha.
+- O navegador lê animation_catalog.json e os PNGs dentro do ZIP, sem enviar o arquivo para um servidor.
+- O catálogo é guardado no armazenamento local deste navegador.
+- O painel lista os comandos encontrados e permite testar uma animação no token selecionado.
+- Ao usar uma habilidade, nomes comuns como repulsor/raio, unibeam/feixe, míssil/rajada e carga/defesa são associados aos comandos do catálogo.
+- Os comandos de movimento usam os nomes definidos no catálogo; o pacote atual tem poses provisórias para movimento, não um ciclo real de caminhada.
+
+Como usar
+1. Atualize o projeto com estes arquivos.
+2. Abra Modo Combate e expanda Motor de animações.
+3. Escolha o arquivo Homem-de-Ferro-pacote-animacoes-iniciais.zip.
+4. Selecione um token e clique em um comando da lista para testar.
+5. Cadastre habilidades com nomes relacionados aos comandos (ex.: Raio repulsor, Unibeam, Rajada de mísseis).
+
+Importante
+- O pacote fica salvo somente no navegador que o importou; não sincroniza automaticamente com outros jogadores.
+- A imagem enviada tem poses e efeitos isolados, não todos os quadros originais. O motor executa os recursos disponíveis e sequências aproximadas do catálogo; não recupera animações SWF que não estão dentro do ZIP.
+- O ZIP de animações não é automaticamente associado a todos os tokens: o mestre deve importar o pacote e selecionar o token/usar habilidades.
+- Não foi possível executar o build nesta sessão porque as dependências npm (incluindo Vite) não estão instaladas e a instalação de pacotes excedeu o tempo limite. Revisar o build após npm install no ambiente do projeto.

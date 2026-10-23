@@ -51,13 +51,39 @@
 @keyframes sprite-test-pulse{from{transform:translateX(-8px)}to{transform:translateX(8px)}}
 @media(max-width:700px){.sprite-importer-heading{align-items:flex-start}.sprite-frame-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* Ajustes do importador e dos tokens: a galeria fica recolhida até ser solicitada. */
-.sprite-results{border-top:1px solid #2c3a4e;padding-top:10px;min-width:0}
-.sprite-results summary{cursor:pointer;color:#b9c8dd;font-size:12px;font-weight:700;padding:7px 2px;user-select:none}
-.sprite-results[open] summary{margin-bottom:10px;color:#f4d18a}
-/* Sprite transparente deve manter o recorte original, sem a medalha circular azul. */
-.map-token:has(.map-token-portrait img){background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;filter:none}
-.map-token:has(.map-token-portrait img).selected{outline:2px solid #f7c85b;outline-offset:4px;filter:drop-shadow(0 0 7px #f7c85b)}
-.map-token-portrait:has(img){width:76px;height:76px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible}
-.map-token-portrait img{object-fit:contain!important;object-position:center;image-rendering:auto}
-.map-token:has(.map-token-portrait img) small{display:block;margin-top:2px;text-shadow:0 2px 4px #000,0 0 6px #000}
+/* HUD de combate: tabuleiro amplo + painel lateral estilo videogame */
+.combat-stage-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,350px);gap:14px;align-items:stretch;margin-top:12px;min-width:0}
+.combat-stage-layout .map-scene-canvas.is-combat{height:calc(100vh - 250px);min-height:480px;max-height:900px;align-self:start;position:relative;overflow:hidden;touch-action:pan-y}
+.combat-hud{min-width:0;max-height:calc(100vh - 250px);overflow:auto;display:flex;flex-direction:column;gap:12px;padding:10px;border:1px solid #34465e;border-radius:14px;background:linear-gradient(180deg,#111d2d,#0a111c);box-shadow:inset 0 1px #ffffff0a}
+.combat-hud .combat-add-token,.combat-hud .combat-action-panel,.combat-hud .sprite-importer{padding:12px;background:#121e2e;border-color:#34465e}
+.combat-hud .combat-add-row{display:grid;grid-template-columns:1fr auto;gap:7px}
+.combat-hud .combat-add-row input:not([type=file]){min-width:0;grid-column:1/-1}
+.combat-hud .combat-upload{grid-column:1/-1;overflow:hidden}
+.combat-hud .combat-upload input{max-width:145px}
+.combat-hud .combat-add-row>.map-button{grid-column:1/-1;justify-content:center}
+.combat-hud .combat-add-ability{flex-direction:column}
+.combat-hud .combat-add-ability input{box-sizing:border-box;width:100%;min-width:0}
+.combat-hud .combat-ability-list{grid-template-columns:1fr}
+.combat-hud .combat-ability-button{min-height:48px}
+.combat-hud .sprite-importer{display:block}
+.sprite-import-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;background:transparent;color:#e8f1ff;text-align:left;cursor:pointer}
+.sprite-import-toggle>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:4px}
+.sprite-import-toggle strong{font-size:12px}.sprite-import-toggle small{font-size:10px;color:#9baec7}.sprite-toggle-mark{font-size:23px;color:#f6c86b}
+.sprite-importer-content{display:grid;gap:10px;padding-top:10px}
+.combat-hud .sprite-frame-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:340px}
+.combat-hud .sprite-frame-preview{height:95px}
+.combat-hud .sprite-frame-card>div:not(.sprite-frame-preview):not(.sprite-test-stage){flex-direction:column}
+.combat-hud .sprite-frame-card .map-button{justify-content:center}
+.combat-hud .combat-move-row{align-items:stretch;flex-direction:column}
+.token-scale-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border:1px solid #34465e;border-radius:10px;background:#0b1421;color:#cbd8e9;font-size:11px}
+.token-scale-control input{flex:1;min-width:100px;accent-color:#f6c86b}.token-scale-control span{color:#f6c86b;font-weight:800}
+/* Sprite token: remove the circular avatar treatment and show the original silhouette */
+.map-token{background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;min-width:0;min-height:0;padding:0!important;display:flex;flex-direction:column;align-items:center;gap:3px}
+.map-token-portrait{width:auto!important;height:auto!important;min-width:0;min-height:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;font-size:34px;transform:scale(var(--token-scale,1));transform-origin:center bottom;transition:transform .12s,filter .12s}
+.map-token-portrait img{width:auto!important;height:auto!important;max-width:110px;max-height:145px;object-fit:contain!important;border-radius:0!important;filter:drop-shadow(0 4px 3px #000a)}
+.map-token.selected .map-token-portrait{filter:drop-shadow(0 0 8px #f6c86b)}
+.map-token.selected{outline:1px solid #f6c86b!important;outline-offset:5px!important;border-radius:3px!important}
+.map-token small{padding:3px 6px;border:1px solid #45556c;border-radius:4px;background:#0a111de8;color:#f4f7ff;font-size:10px;font-weight:800;text-shadow:0 1px #000;max-width:120px}
+.map-token.attacking .map-token-portrait{animation:comic-flash .5s steps(2,end) 2}
+@media(max-width:1050px){.combat-stage-layout{grid-template-columns:minmax(0,1fr)}.combat-stage-layout .map-scene-canvas.is-combat{height:62vh;min-height:360px}.combat-hud{max-height:none;overflow:visible;display:grid;grid-template-columns:1fr 1fr;align-items:start}.combat-hud .combat-action-panel{grid-row:span 2}}
+@media(max-width:650px){.combat-hud{display:flex}.combat-stage-layout .map-scene-canvas.is-combat{height:55vh;min-height:300px}.combat-hud .sprite-frame-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

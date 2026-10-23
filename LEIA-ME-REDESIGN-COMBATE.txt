@@ -1,0 +1,23 @@
+MUNDO DE BATALHA — REDESIGN DO MODO COMBATE
+
+Esta atualização foi feita sobre o projeto mundo-main (1).zip e inclui o importador de sprite sheet que já estava sendo usado.
+
+ALTERAÇÕES
+- Tabuleiro e HUD organizados lado a lado em telas largas; em telas menores o HUD passa para baixo.
+- Painel lateral com visual de HUD de videogame.
+- Importador recolhido por padrão; abre em “Importar personagem e animações”, para não ocupar a tela quando não estiver sendo usado.
+- Tokens de imagem exibidos sem avatar circular, preservando melhor a silhueta e transparência do PNG.
+- Controle de escala do personagem selecionado.
+- Delete/Backspace exclui o token selecionado no modo Combate (com confirmação). O atalho não atua enquanto se digita em campos.
+- Mantidas as funções existentes de mapa, cenas, permissões, habilidades e Supabase.
+
+INSTALAÇÃO
+1. Faça backup do projeto atual.
+2. Copie os arquivos do ZIP para o projeto, mantendo a estrutura e substituindo os arquivos quando solicitado.
+3. Publique pelo GitHub/Vercel como de costume.
+
+NOTAS
+- Não requer nova migração SQL.
+- A escala é visual/local da sessão atual, não é persistida por token no banco.
+- O importador ainda tenta detectar componentes visuais separados; não garante reconstruir automaticamente sequências reais de animação a partir de qualquer sprite sheet.
+- Não foi possível executar o build neste ambiente porque as dependências npm não estavam instaladas e a instalação excedeu o tempo disponível. Faça o deploy de teste e confira o log da Vercel.

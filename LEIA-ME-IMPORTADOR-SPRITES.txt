@@ -1,0 +1,28 @@
+MUNDO DE BATALHA — PRIMEIRA ETAPA DO IMPORTADOR DE SPRITE SHEETS
+
+Arquivos incluídos (caminhos relativos à raiz do projeto):
+- src/pages/MapPage.jsx
+- src/styles/map-page.css
+
+INSTALAÇÃO
+1. Faça uma cópia de segurança do projeto.
+2. Extraia este ZIP.
+3. Copie a pasta src para a raiz do projeto e aceite substituir os dois arquivos indicados.
+4. Faça commit/push para publicar pela Vercel.
+
+COMO TESTAR
+1. Abra uma cena e clique em Combate.
+2. Na área de controles, encontre “Importador automático de sprite sheet”.
+3. Escolha a imagem PNG/JPG/WebP da sprite sheet.
+4. O importador tenta separar componentes visuais e lista os encontrados como Animação 1, 2, 3...
+5. Renomeie os itens, teste a prévia e use um componente como imagem de token se desejar.
+
+LIMITAÇÕES DESTA PRIMEIRA ETAPA
+- A detecção usa transparência e pixels do fundo; componentes encostados podem não ser separados e poses do mesmo personagem não são automaticamente agrupadas numa animação coerente.
+- “Testar” é uma prévia visual do componente detectado, ainda não a reprodução da animação original do jogo.
+- Os nomes e sequências dos XMLs do jogo ainda não foram ligados automaticamente aos recursos gráficos.
+- A seleção de escala ajusta a prévia do importador; ainda não salva escala individual dos tokens no banco.
+- Não exige alteração SQL.
+
+VALIDAÇÃO
+Tentei executar o build, mas o ambiente não tinha o Vite instalado e a instalação de dependências excedeu o tempo limite. Portanto, este ZIP não foi validado por compilação. Faça backup antes de substituir os arquivos.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, LockKeyhole, MapPin, Plus, Swords, ImagePlus, Trash2 } from 'lucide-react'
+import CombatBoard from './CombatBoard.jsx'
 import { supabase } from '../lib/supabase.js'
 import { useMaster } from '../state/MasterContext.jsx'
 import '../styles/map-page.css'
@@ -94,15 +95,25 @@ export default function MapPage() {
     setScenes(old=>old.map(x=>x.id===s.id?{...x,scene_type:'combat'}:x));setScene({...s,scene_type:'combat'});setMode('combat')
   }
   async function addToken() {
-    if(!isMaster||!scene||!tokenName.trim())return
-    const {data,error:e}=await supabase.from('map_tokens').insert({scene_id:scene.id,name:tokenName.trim(),x:50,y:50,emoji:'♟'}).select().single()
-    if(e){setError('Não consegui criar o token: '+e.message);return}
-    setTokens(old=>[...old,data]);setTokenName('')
+    if (!isMaster || !scene) return
+    const { data, error: e } = await supabase.from('map_tokens').insert({
+      scene_id: scene.id, name: 'Homem de Ferro', x: 50, y: 50, emoji: '♟'
+    }).select().single()
+    if (e) { setError('Não consegui adicionar o Homem de Ferro: ' + e.message); return }
+    setTokens(old => [...old, data])
+    setError('')
   }
-  async function moveToken(id,x,y) {
-    setTokens(old=>old.map(t=>t.id===id?{...t,x,y}:t))
-    const {error:e}=await supabase.from('map_tokens').update({x,y}).eq('id',id)
-    if(e)setError('A posição do token não foi salva: '+e.message)
+  async function moveToken(id, x, y, persist = false) {
+    setTokens(old => old.map(t => t.id === id ? { ...t, x, y } : t))
+    if (!persist) return
+    const { error: e } = await supabase.from('map_tokens').update({ x, y }).eq('id', id)
+    if (e) setError('A posição do personagem não foi salva: ' + e.message)
+  }
+  async function removeToken(id) {
+    if (!isMaster) return
+    const { error: e } = await supabase.from('map_tokens').delete().eq('id', id)
+    if (e) { setError('Não consegui remover o personagem: ' + e.message); return }
+    setTokens(old => old.filter(t => t.id !== id))
   }
   async function removeScene(s) {
     if(!isMaster||!confirm('Excluir esta cena?'))return
@@ -110,15 +121,28 @@ export default function MapPage() {
     if(e){setError(e.message);return}
     setScenes(old=>old.filter(x=>x.id!==s.id));setTokens(old=>old.filter(t=>t.scene_id!==s.id));if(scene?.id===s.id)setScene(null)
   }
-  const sceneTokens = useMemo(()=>tokens.filter(t=>t.scene_id===scene?.id),[tokens,scene])
+  const sceneTokens = useMemo(()=>tokens.filter(t=>t.scene_id===scene?.id && t.name==='Homem de Ferro'),[tokens,scene])
   if (loading) return <section className="map-page"><p>Carregando o mapa…</p></section>
+  if (scene && mode === 'combat') return (
+    <section className="map-page map-page--scene map-page--combat">
+      <CombatBoard
+        scene={scene}
+        tokens={sceneTokens}
+        isMaster={isMaster}
+        onAddIronMan={addToken}
+        onMoveToken={moveToken}
+        onRemoveToken={removeToken}
+        onBack={() => { setMode('explore'); setDragging(null) }}
+        error={error}
+      />
+    </section>
+  )
+
   if (scene) return <section className="map-page map-page--scene">
     <header className="map-toolbar"><button className="map-button" onClick={()=>{setScene(null);setMode('explore')}}><ArrowLeft size={17}/> Voltar ao local</button><div><h1>{scene.title}</h1><p>{place?.name || PLACES.find(p=>p.id===scene.place_id)?.name}</p></div><div className="map-mode-switch"><button className={mode==='explore'?'active':''} onClick={()=>setMode('explore')}>Exploração</button><button className={mode==='combat'?'active':''} onClick={()=>setMode('combat')}><Swords size={15}/> Combate</button></div></header>
-    <div className={`map-scene-canvas ${mode==='combat'?'is-combat':''}`} style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.15),rgba(5,8,14,.02)),url("${scene.image_url}")`}} onPointerMove={e=>{if(!dragging)return;const r=e.currentTarget.getBoundingClientRect();moveToken(dragging.id,Math.max(0,Math.min(100,((e.clientX-r.left)/r.width)*100)),Math.max(0,Math.min(100,((e.clientY-r.top)/r.height)*100)) )}} onPointerUp={()=>setDragging(null)}>
-      {mode==='combat' && sceneTokens.map(t=><button key={t.id} className="map-token" style={{left:`${t.x}%`,top:`${t.y}%`}} onPointerDown={e=>{if(!isMaster)return;e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);setDragging({id:t.id})}} title={isMaster?'Arrasta para mover':t.name}><span>{t.emoji||'♟'}</span><small>{t.name}</small></button>)}
-      {mode==='explore' && <div className="map-scene-caption">{scene.title}</div>}
+    <div className="map-scene-canvas" style={{backgroundImage:`linear-gradient(0deg,rgba(5,8,14,.15),rgba(5,8,14,.02)),url("${scene.image_url}")`}}>
+      <div className="map-scene-caption">{scene.title}</div>
     </div>
-    {isMaster&&mode==='combat'&&<form className="map-inline-form" onSubmit={e=>{e.preventDefault();addToken()}}><input value={tokenName} onChange={e=>setTokenName(e.target.value)} placeholder="Nome do personagem/inimigo"/><button className="map-button" type="submit"><Plus size={16}/> Adicionar token</button><span>Arrasta os tokens para mover. As posições são salvas para todos.</span></form>}
     {error&&<p className="map-error">{error}</p>}
   </section>
 

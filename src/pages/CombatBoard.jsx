@@ -1,169 +1,77 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Shield, Trash2, Zap } from 'lucide-react'
+import { ArrowLeft, Shield, ShieldOff, Trash2 } from 'lucide-react'
 
-const POSES = {
-  idle: '/characters/iron-man/idle.png',
-  left: '/characters/iron-man/walk-left.png',
-  right: '/characters/iron-man/walk-right.png',
-  defend: '/characters/iron-man/defend.png',
-  attack1: '/characters/iron-man/attack-1.png',
-  attack2: '/characters/iron-man/attack-2.png',
-  attack3: '/characters/iron-man/attack-3.png',
-  attack4: '/characters/iron-man/attack-4.png',
+const CHARACTERS = {
+  'Homem de Ferro': { folder:'iron-man', poses:{ idle:'idle.png', left:'walk-left.png', right:'walk-right.png', defend:'defend.png', attack1:'attack-1.png', attack2:'attack-2.png', attack3:'attack-3.png', attack4:'attack-4.png' }, actions:[['attack1','Ataque 1'],['attack2','Ataque 2'],['attack3','Ataque 3'],['attack4','Ataque 4'],['defend','Defender']] },
+  'Noturno': { folder:'nightcrawler', poses:{ idle:'idle.png', left:'walk-left.png', right:'walk-right.png', teleport:'teleport.png', attackRight:'attack-right.png', attackLeft:'attack-left.png' }, actions:[['teleport','Teleporte','mode'],['attackRight','Ataque direita'],['attackLeft','Ataque esquerda']] },
+  'Homem-Aranha': { folder:'spider-man', poses:{ idle:'idle.png', left:'walk-left.png', right:'walk-right.png', dodge:'dodge.png', web:'web.png' }, actions:[['web','Disparar teia'],['dodge','Esquiva']] },
+  'Doutor Estranho': { folder:'doctor-strange', poses:{ idle:'idle.png', shieldIdle:'shield-idle.png', shield:'shield.png', lasso:'lasso.png', eye:'eye.png' }, actions:[['lasso','Laço mágico'],['eye','Olho de Agamotto']], shield:true },
 }
-const ATTACKS = [
-  { id: 'attack1', label: 'Ataque 1', icon: '⚡', duration: 900 },
-  { id: 'attack2', label: 'Ataque 2', icon: '☄️', duration: 1000 },
-  { id: 'attack3', label: 'Ataque 3', icon: '💥', duration: 1000 },
-  { id: 'attack4', label: 'Ataque 4', icon: '🔥', duration: 900 },
-]
+const getCharacter = token => CHARACTERS[token?.name] || null
+const imagePath = (token, pose) => { const c=getCharacter(token); return c ? `/characters/${c.folder}/${c.poses[pose] || c.poses.idle}` : '' }
 
-export default function CombatBoard({ scene, tokens, isMaster, onAddIronMan, onMoveToken, onRemoveToken, onBack, error }) {
-  const [selectedId, setSelectedId] = useState(null)
-  const [poses, setPoses] = useState({})
-  const [activeAction, setActiveAction] = useState('')
-  const [scale, setScale] = useState(1)
-  const [saving, setSaving] = useState(false)
-  const boardRef = useRef(null)
-  const dragRef = useRef(null)
-  const timersRef = useRef({})
+export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, onMoveToken, onRemoveToken, onBack, error }) {
+  const [selectedId,setSelectedId]=useState(null)
+  const [poses,setPoses]=useState({})
+  const [shielded,setShielded]=useState({})
+  const [teleportId,setTeleportId]=useState(null)
+  const [actionLabel,setActionLabel]=useState('')
+  const [scale,setScale]=useState(1)
+  const [saving,setSaving]=useState(false)
+  const drag=useRef(null); const timer=useRef({}); const board=useRef(null)
+  useEffect(()=>()=>Object.values(timer.current).forEach(clearTimeout),[])
+  const selected=tokens.find(t=>t.id===selectedId)||tokens[0]||null
+  const character=getCharacter(selected)
+  const poseFor=t=> t?.name==='Doutor Estranho'&&shielded[t.id] ? 'shieldIdle' : poses[t?.id]||'idle'
+  const srcFor=t=>imagePath(t,poseFor(t))
+  const setPose=(id,p)=>setPoses(v=>({...v,[id]:p}))
 
-  useEffect(() => () => Object.values(timersRef.current).forEach(clearTimeout), [])
-  const selected = tokens.find(t => t.id === selectedId) || tokens[0] || null
-
-  function setPose(id, pose) {
-    setPoses(old => ({ ...old, [id]: pose }))
+  function playAction(token,id,label) {
+    clearTimeout(timer.current[token.id]); setSelectedId(token.id); setActionLabel(label); setPose(token.id,id)
+    timer.current[token.id]=setTimeout(()=>{setPose(token.id,token.name==='Doutor Estranho'&&shielded[token.id]?'shieldIdle':'idle');setActionLabel(shielded[token.id]&&token.name==='Doutor Estranho'?'Escudo ativo':'')},1000)
   }
-
-  function playAction(token, pose, label, duration = 1000) {
-    if (!token) return
-    clearTimeout(timersRef.current[token.id])
-    setSelectedId(token.id)
-    setActiveAction(label)
-    setPose(token.id, pose)
-    timersRef.current[token.id] = setTimeout(() => {
-      setPose(token.id, 'idle')
-      setActiveAction('')
-    }, duration)
+  function toggleShield(token) {
+    const next=!shielded[token.id]; clearTimeout(timer.current[token.id]); setShielded(v=>({...v,[token.id]:next})); setPose(token.id,next?'shieldIdle':'idle'); setActionLabel(next?'Escudo ativo':'Escudo desativado')
   }
-
-  function pointerDown(e, token) {
-    if (!isMaster) return
-    e.preventDefault()
-    e.stopPropagation()
-    setSelectedId(token.id)
-    dragRef.current = {
-      id: token.id,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      lastX: e.clientX,
-      lastY: e.clientY,
-      x: Number(token.x),
-      y: Number(token.y),
-      moved: false,
-    }
-    e.currentTarget.setPointerCapture?.(e.pointerId)
+  function toggleTeleport(token) {
+    if(teleportId===token.id){setTeleportId(null);setActionLabel('');return}
+    setSelectedId(token.id);setTeleportId(token.id);setActionLabel('Clique no destino do mapa para teleportar')
   }
-
-  function pointerMove(e) {
-    const drag = dragRef.current
-    if (!drag || !boardRef.current) return
-    const rect = boardRef.current.getBoundingClientRect()
-    const dx = e.clientX - drag.lastX
-    const dy = e.clientY - drag.lastY
-    if (Math.abs(e.clientX - drag.startX) + Math.abs(e.clientY - drag.startY) > 2) drag.moved = true
-    if (drag.moved) {
-      const horizontalTravel = e.clientX - drag.startX
-      const pose = Math.abs(horizontalTravel) > 3 ? (horizontalTravel < 0 ? 'left' : 'right') : 'idle'
-      setPose(drag.id, pose)
-      const x = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100))
-      const y = Math.max(4, Math.min(96, ((e.clientY - rect.top) / rect.height) * 100))
-      drag.x = x
-      drag.y = y
-      onMoveToken(drag.id, x, y, false)
-    }
-    drag.lastX = e.clientX
-    drag.lastY = e.clientY
+  async function boardClick(e) {
+    if(!teleportId || e.target.closest('.combat-token')) return
+    const token=tokens.find(t=>t.id===teleportId); if(!token||!board.current)return
+    const r=board.current.getBoundingClientRect(); const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100)); const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100))
+    setSaving(true); await onMoveToken(token.id,x,y); setSaving(false); setPose(token.id,'teleport'); setSelectedId(token.id); setTeleportId(null); setActionLabel('Teleporte realizado')
   }
+  function startDrag(e,t) { if(!isMaster||teleportId)return; e.preventDefault();e.stopPropagation();setSelectedId(t.id);drag.current={id:t.id,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};e.currentTarget.setPointerCapture?.(e.pointerId) }
+  function moveDrag(e) { const d=drag.current;if(!d||!board.current)return;const r=board.current.getBoundingClientRect();if(Math.abs(e.clientX-d.x)+Math.abs(e.clientY-d.y)>3)d.moved=true;if(!d.moved)return;const dx=e.clientX-d.lastX;if(Math.abs(dx)>1)setPose(d.id,dx<0?'left':'right');const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100));const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100));d.px=x;d.py=y;d.lastX=e.clientX;d.lastY=e.clientY;onMoveToken(d.id,x,y,false) }
+  async function endDrag(){const d=drag.current;if(!d)return;drag.current=null;if(d.moved){setSaving(true);await onMoveToken(d.id,d.px,d.py,true);setSaving(false);setPose(d.id,'idle')}}
 
-  async function pointerUp() {
-    const drag = dragRef.current
-    if (!drag) return
-    dragRef.current = null
-    if (drag.moved) {
-      setSaving(true)
-      await onMoveToken(drag.id, drag.x, drag.y, true)
-      setSaving(false)
-    }
-    setPose(drag.id, 'idle')
-  }
-
-  const currentPose = (token) => poses[token.id] || 'idle'
-
-  return (
-    <div className="new-combat">
-      <div className="new-combat__top">
-        <button className="map-button" onClick={onBack}><ArrowLeft size={17}/> Voltar à cena</button>
-        <div className="new-combat__heading">
-          <span className="new-combat__eyebrow">MUNDO DE BATALHA · COMBATE</span>
-          <h2>{scene.title}</h2>
-          <p>{tokens.length} personagem(ns) no tabuleiro</p>
-        </div>
-        {isMaster && <button className="new-combat__add" onClick={onAddIronMan}>＋ Adicionar Homem de Ferro</button>}
+  return <section className="combat-board-page">
+    <header className="combat-board-header"><button className="map-button" onClick={onBack}><ArrowLeft size={16}/> Voltar à cena</button><div><h1>{scene.title}</h1><p>Combate · {tokens.length} personagem(ns)</p></div></header>
+    <div className="combat-board-layout">
+      <div ref={board} className={`combat-board ${teleportId?'teleport-target':''}`} style={{backgroundImage:`linear-gradient(#05080e12,#05080e22),url("${scene.image_url}")`}} onClick={boardClick} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':selected?.id===t.id?scale:1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
+          {c?<img src={srcFor(t)} alt={t.name} draggable="false"/>:<span className="combat-token-fallback">{t.emoji||'♟'}</span>}<small>{t.name}</small>
+        </button>})}
+        {!tokens.length&&<div className="combat-empty">Adicione personagens para começar.</div>}
+        {teleportId&&<div className="combat-teleport-hint">🌀 TELEPORTE ATIVADO — clique no destino</div>}
+        {saving&&<div className="combat-saving">Salvando posição…</div>}
       </div>
-
-      <div className="new-combat__layout">
-        <div
-          ref={boardRef}
-          className="new-combat__board"
-          style={{ backgroundImage: `linear-gradient(0deg,rgba(5,8,14,.12),rgba(5,8,14,.02)),url("${scene.image_url}")` }}
-          onPointerMove={pointerMove}
-          onPointerUp={pointerUp}
-          onPointerCancel={pointerUp}
-          onLostPointerCapture={pointerUp}
-        >
-          {tokens.map(token => {
-            const pose = currentPose(token)
-            return (
-              <div
-                key={token.id}
-                className={`new-combat__token ${selectedId === token.id ? 'is-selected' : ''}`}
-                style={{ left: `${token.x}%`, top: `${token.y}%`, '--sprite-scale': selectedId === token.id ? scale : 1 }}
-                onPointerDown={e => pointerDown(e, token)}
-                onClick={() => setSelectedId(token.id)}
-                role="button"
-                tabIndex={0}
-                aria-label={token.name}
-              >
-                <img draggable="false" src={POSES[pose] || POSES.idle} alt={token.name}/>
-                <span>{token.name}</span>
-              </div>
-            )
-          })}
-          {!tokens.length && <div className="new-combat__empty">Adicione o Homem de Ferro para começar o combate.</div>}
-          {saving && <div className="new-combat__saving">Salvando posição…</div>}
-        </div>
-
-        <aside className="new-combat__hud">
-          <div className="new-combat__hud-title"><span>CONTROLE DO PERSONAGEM</span><b>{selected?.name || 'Nenhum selecionado'}</b></div>
-          {selected ? <>
-            <div className="new-combat__portrait"><img src={POSES[currentPose(selected)] || POSES.idle} alt={selected.name}/></div>
-            <label className="new-combat__scale">Tamanho do personagem <strong>{Math.round(scale * 100)}%</strong>
-              <input type="range" min="0.55" max="1.8" step="0.05" value={scale} onChange={e => setScale(Number(e.target.value))}/>
-            </label>
-            <div className="new-combat__section-label">ATAQUES</div>
-            <div className="new-combat__actions">
-              {ATTACKS.map(action => <button key={action.id} onClick={() => playAction(selected, action.id, action.label, action.duration)}><span>{action.icon}</span>{action.label}</button>)}
-            </div>
-            <button className="new-combat__defend" onClick={() => playAction(selected, 'defend', 'Defendendo', 1200)}><Shield size={17}/> Defender</button>
-            {activeAction && <div className="new-combat__status"><Zap size={15}/>{activeAction}</div>}
-            {isMaster && <button className="new-combat__remove" onClick={() => { if (confirm(`Remover ${selected.name} do mapa?`)) { onRemoveToken(selected.id); setSelectedId(null) } }}><Trash2 size={15}/> Remover personagem</button>}
-          </> : <p className="new-combat__hint">Selecione um personagem no tabuleiro para controlar seus ataques e defesa.</p>}
-          <p className="new-combat__tip">Arraste o personagem no tabuleiro. A pose muda conforme a direção do movimento e volta ao normal quando você soltar.</p>
-          {error && <p className="map-error">{error}</p>}
-        </aside>
-      </div>
+      <aside className="combat-hud">
+        <div className="combat-hud-title">CONTROLE DO PERSONAGEM<strong>{selected?.name||'Selecione um personagem'}</strong></div>
+        {isMaster&&<div className="combat-add-list"><span>ADICIONAR AO MAPA</span>{Object.keys(CHARACTERS).map(name=><button key={name} onClick={()=>onAddCharacter(name)}>＋ {name}</button>)}</div>}
+        {selected&&character?<>
+          <div className="combat-portrait"><img src={srcFor(selected)} alt={selected.name}/></div>
+          <label className="combat-scale">Tamanho <b>{Math.round(scale*100)}%</b><input type="range" min=".5" max="1.8" step=".05" value={scale} onChange={e=>setScale(Number(e.target.value))}/></label>
+          <div className="combat-action-title">AÇÕES</div><div className="combat-actions">{character.actions.map(([id,label,mode])=><button key={id} className={id==='teleport'&&teleportId===selected.id?'active':''} disabled={!!teleportId&&teleportId!==selected.id} onClick={()=>mode?toggleTeleport(selected):playAction(selected,id,label)}>{label}</button>)}</div>
+          {character.shield&&<button className={`combat-shield ${shielded[selected.id]?'active':''}`} onClick={()=>toggleShield(selected)}>{shielded[selected.id]?<ShieldOff size={16}/>:<Shield size={16}/>} {shielded[selected.id]?'Desativar escudo':'Ativar escudo'}</button>}
+          {actionLabel&&<p className="combat-action-status">{actionLabel}</p>}
+          {selected.name==='Doutor Estranho'&&shielded[selected.id]&&<p className="combat-note">Escudo mantido. O Laço mágico pode ser usado sem desativá-lo.</p>}
+          {isMaster&&<button className="combat-remove" onClick={()=>{if(confirm(`Remover ${selected.name} do combate?`)){onRemoveToken(selected.id);setSelectedId(null);setTeleportId(null)}}}><Trash2 size={15}/> Remover personagem</button>}
+        </>:<p className="combat-note">Selecione um personagem cadastrado para ver suas ações.</p>}
+        <p className="combat-note">Arraste personagens para movimentá-los. A pose acompanha a direção do movimento.</p>{error&&<p className="map-error">{error}</p>}
+      </aside>
     </div>
-  )
+  </section>
 }

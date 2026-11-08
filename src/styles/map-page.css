@@ -1,4 +1,4 @@
-.map-page{padding:28px clamp(16px,3vw,42px);color:var(--text,#edf0f6);min-height:100%;display:flex;flex-direction:column;gap:18px}.map-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.map-toolbar>div:first-of-type{flex:1}.map-toolbar h1{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.03em}.map-toolbar p{margin:5px 0 0;color:var(--muted,#9ba5b5)}.map-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #414a5a;background:#1b2432;color:#f5f7fb;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer}.map-button:hover{background:#29364a}.map-master-label{font-size:12px;border:1px solid #725e37;background:#342b1b;color:#f1d49a;border-radius:20px;padding:7px 11px}.map-world{position:relative;display:block;width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-color:#121a26;background-size:contain !important;background-position:center;background-repeat:no-repeat;border:1px solid #384355;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px #0004}.map-world:after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 80px #07101d55}.map-place{position:absolute;z-index:1;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;color:#fff;cursor:pointer;max-width:150px;text-shadow:0 2px 5px #000}.map-place-icon{width:35px;height:35px;display:grid;place-items:center;border:2px solid #e8f2ff;border-radius:50%;background:#2463a9;box-shadow:0 3px 15px #0009;transition:transform .15s,background .15s}.map-place:hover .map-place-icon{transform:scale(1.14);background:#3b82d0}.map-place.locked .map-place-icon{background:#343b47;border-color:#a9b2bf;color:#d6dbe3}.map-place-name{font-size:12px;line-height:1.15;font-weight:750;text-align:center;padding:4px 6px;border-radius:6px;background:#07101dd9;max-width:150px}.map-place-lock{font-size:10px;color:#f3d7a0;background:#211d18e8;border-radius:5px;padding:2px 5px}.map-footnote,.map-add-scene small{color:var(--muted,#9ba5b5);font-size:12px}.map-locked,.map-empty{border:1px dashed #424e60;border-radius:16px;padding:45px 20px;text-align:center;color:#aeb8c7}.map-locked h2{color:#f0f3f8}.map-add-scene{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#141c29;border:1px solid #303b4b;border-radius:14px;padding:16px}.map-add-scene h3{width:100%;display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:16px}.map-add-scene input,.map-inline-form input{min-width:190px;flex:1;border:1px solid #3d4859;border-radius:9px;background:#0d1420;color:#f5f7fb;padding:11px 12px}.map-add-scene small{width:100%}.map-scene-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}.map-scene-card{overflow:hidden;border:1px solid #303b4b;border-radius:14px;background:#141c29}.map-scene-open{width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.map-scene-open img{width:100%;height:165px;object-fit:cover;display:block;background:#0b111b}.map-scene-open span,.map-scene-open small{display:block;padding:10px 12px 0;font-weight:700}.map-scene-open small{padding-top:4px;padding-bottom:12px;color:#9ba5b5;font-weight:500}.map-scene-actions{display:flex;justify-content:space-between;padding:9px 10px;border-top:1px solid #303b4b}.map-scene-actions button{display:inline-flex;align-items:center;gap:6px;color:#c7d7ef;background:transparent;border:0;cursor:pointer;padding:5px}.map-scene-actions button:hover{color:#fff}.map-scene-canvas{position:relative;width:100%;height:min(70vh,760px);min-height:380px;border:1px solid #384355;border-radius:16px;background-color:#0b111b;background-size:contain;background-position:center;background-repeat:no-repeat;overflow:hidden;touch-action:none}.map-scene-canvas.is-combat{background-size:100% 100%}.map-scene-caption{position:absolute;left:18px;bottom:18px;padding:9px 13px;border-radius:9px;background:#07101ddd;font-weight:700}.map-mode-switch{display:flex;gap:4px;background:#101722;border:1px solid #303b4b;padding:4px;border-radius:11px}.map-mode-switch button{display:flex;align-items:center;gap:6px;border:0;border-radius:8px;background:transparent;color:#aab4c4;padding:8px 11px;cursor:pointer}.map-mode-switch button.active{background:#2a3c55;color:#fff}.map-token{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:#fff;cursor:grab;touch-action:none;text-shadow:0 2px 5px #000}.map-token:active{cursor:grabbing}.map-token span{display:grid;place-items:center;width:42px;height:42px;border:2px solid white;border-radius:50%;background:#345e9b;font-size:25px;box-shadow:0 3px 12px #0009}.map-token small{background:#07101de8;border-radius:5px;padding:3px 6px;white-space:nowrap;font-size:11px;font-weight:700}.map-inline-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.map-inline-form span{font-size:12px;color:#9ba5b5;width:100%}.map-error{padding:10px 12px;border:1px solid #7d3b45;background:#321c24;border-radius:9px;color:#ffb9c2;margin:0}@media(max-width:700px){.map-page{padding:16px 12px}.map-world{width:100%;height:auto;min-height:0;aspect-ratio:3/2;max-height:none;background-size:contain !important;}.map-place-name{font-size:10px;max-width:100px}.map-place{max-width:105px}.map-scene-canvas{min-height:300px;height:60vh}.map-toolbar{align-items:flex-start}.map-mode-switch{width:100%}.map-mode-switch button{flex:1;justify-content:center}}
+.map-page{padding:28px clamp(16px,3vw,42px);color:var(--text,#edf0f6);min-height:100%;display:flex;flex-direction:column;gap:18px}.map-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.map-toolbar>div:first-of-type{flex:1}.map-toolbar h1{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.03em}.map-toolbar p{margin:5px 0 0;color:var(--muted,#9ba5b5)}.map-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #414a5a;background:#1b2432;color:#f5f7fb;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer}.map-button:hover{background:#29364a}.map-master-label{font-size:12px;border:1px solid #725e37;background:#342b1b;color:#f1d49a;border-radius:20px;padding:7px 11px}.map-world{position:relative;display:block;width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-color:#121a26;background-size:contain !important;background-position:center;background-repeat:no-repeat;border:1px solid #384355;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px #0004}.map-world:after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 80px #07101d55}.map-place{position:absolute;z-index:1;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;color:#fff;cursor:pointer;max-width:150px;text-shadow:0 2px 5px #000}.map-place-icon{width:35px;height:35px;display:grid;place-items:center;border:2px solid #e8f2ff;border-radius:50%;background:#2463a9;box-shadow:0 3px 15px #0009;transition:transform .15s,background .15s}.map-place:hover .map-place-icon{transform:scale(1.14);background:#3b82d0}.map-place.locked .map-place-icon{background:#343b47;border-color:#a9b2bf;color:#d6dbe3}.map-place-name{font-size:12px;line-height:1.15;font-weight:750;text-align:center;padding:4px 6px;border-radius:6px;background:#07101dd9;max-width:150px}.map-place-lock{font-size:10px;color:#f3d7a0;background:#211d18e8;border-radius:5px;padding:2px 5px}.map-footnote,.map-add-scene small{color:var(--muted,#9ba5b5);font-size:12px}.map-locked,.map-empty{border:1px dashed #424e60;border-radius:16px;padding:45px 20px;text-align:center;color:#aeb8c7}.map-locked h2{color:#f0f3f8}.map-add-scene{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#141c29;border:1px solid #303b4b;border-radius:14px;padding:16px}.map-add-scene h3{width:100%;display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:16px}.map-add-scene input,.map-inline-form input{min-width:190px;flex:1;border:1px solid #3d4859;border-radius:9px;background:#0d1420;color:#f5f7fb;padding:11px 12px}.map-add-scene small{width:100%}.map-scene-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}.map-scene-card{overflow:hidden;border:1px solid #303b4b;border-radius:14px;background:#141c29}.map-scene-open{width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.map-scene-open img{width:100%;height:165px;object-fit:cover;display:block;background:#0b111b}.map-scene-open span,.map-scene-open small{display:block;padding:10px 12px 0;font-weight:700}.map-scene-open small{padding-top:4px;padding-bottom:12px;color:#9ba5b5;font-weight:500}.map-scene-actions{display:flex;justify-content:space-between;padding:9px 10px;border-top:1px solid #303b4b}.map-scene-actions button{display:inline-flex;align-items:center;gap:6px;color:#c7d7ef;background:transparent;border:0;cursor:pointer;padding:5px}.map-scene-actions button:hover{color:#fff}.map-scene-canvas{position:relative;width:100%;height:min(70vh,760px);min-height:380px;border:1px solid #384355;border-radius:16px;background-color:#0b111b;background-size:contain;background-position:center;background-repeat:no-repeat;overflow:hidden;touch-action:none}.map-scene-canvas.is-combat{background-size:100% 100%}.map-scene-caption{position:absolute;left:18px;bottom:18px;padding:9px 13px;border-radius:9px;background:#07101ddd;font-weight:700}.map-mode-switch{display:flex;gap:4px;background:#101722;border:1px solid #303b4b;padding:4px;border-radius:11px}.map-mode-switch button{display:flex;align-items:center;gap:6px;border:0;border-radius:8px;background:transparent;color:#aab4c4;padding:8px 11px;cursor:pointer}.map-mode-switch button.active{background:#2a3c55;color:#fff}.map-token{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:#fff;cursor:grab;touch-action:none;text-shadow:0 2px 5px #000}.map-token:active{cursor:grabbing}.map-token span{display:grid;place-items:center;width:42px;height:42px;border:2px solid white;border-radius:50%;background:#345e9b;font-size:25px;box-shadow:0 3px 12px #0009}.map-token small{background:#07101de8;border-radius:5px;padding:3px 6px;white-space:nowrap;font-size:11px;font-weight:700}.map-inline-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.map-inline-form span{font-size:12px;color:#9ba5b5;width:100%}.map-error{padding:10px 12px;border:1px solid #7d3b45;background:#321c24;border-radius:9px;color:#ffb9c2;margin:0}@media(max-width:200px){.map-page{padding:16px 12px}.map-world{width:100%;height:auto;min-height:0;aspect-ratio:3/2;max-height:none;background-size:contain !important;}.map-place-name{font-size:10px;max-width:100px}.map-place{max-width:105px}.map-scene-canvas{min-height:300px;height:60vh}.map-toolbar{align-items:flex-start}.map-mode-switch{width:100%}.map-mode-switch button{flex:1;justify-content:center}}
 /* Melhorias da área de cenas */
 .map-add-scene{align-items:stretch;gap:12px}
 .map-add-scene .map-scene-help{width:100%;margin:0;color:var(--muted,#9ba5b5);font-size:13px;line-height:1.5}
@@ -13,11 +13,11 @@
 .map-scene-card:hover .map-scene-open img{transform:scale(1.025)}
 .map-scene-open span{font-size:15px;padding-top:12px}
 .map-scene-actions{align-items:center}
-@media(max-width:700px){.map-scene-field{min-width:100%;}.map-scene-open img{height:160px}}
+@media(max-width:200px){.map-scene-field{min-width:100%;}.map-scene-open img{height:160px}}
 
 /* Fix: keep the full 3:2 world map visible; marker percentages remain unchanged. */
 .map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;background-position:center center;background-repeat:no-repeat;box-sizing:border-box;}
-@media(max-width:700px){.map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;}}
+@media(max-width:200px){.map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;}}
 
 
 /* Mapa mundial: a imagem e os marcadores compartilham exatamente a mesma área. */
@@ -28,7 +28,7 @@
 .map-world-image{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;object-position:top left;user-select:none;pointer-events:none}
 .map-world-markers{position:absolute;inset:0;width:100%;height:100%;z-index:2}
 .map-world-markers .map-place{line-height:normal}
-@media(max-width:700px){.map-world-viewport{max-height:calc(100vh - 190px);min-height:260px;border-radius:12px}.map-page .map-world{width:100%;aspect-ratio:auto}.map-world-image{width:100%;height:auto;aspect-ratio:3/2;object-fit:contain}.map-world-markers .map-place-name{font-size:10px;max-width:100px}}
+@media(max-width:200px){.map-world-viewport{max-height:calc(100vh - 190px);min-height:260px;border-radius:12px}.map-page .map-world{width:100%;aspect-ratio:auto}.map-world-image{width:100%;height:auto;aspect-ratio:3/2;object-fit:contain}.map-world-markers .map-place-name{font-size:10px;max-width:100px}}
 
 /* Novo tabuleiro de combate com sprites dos personagens */
 .combat-board-page{display:flex;flex-direction:column;gap:14px;padding:18px;min-height:calc(100vh - 100px);color:#f4f6fb}
@@ -59,64 +59,66 @@
 @media(max-width:600px){.combat-token{width:90px;height:138px}.combat-token img{height:114px;max-height:114px;flex-basis:114px}.combat-board{height:62vh;min-height:420px}}
 
 
-/* Combate: sprites grandes (700px de largura) sem deformar e com escala uniforme por personagem. */
-.combat-token{
-  width:700px !important;
-  height:auto !important;
-  min-height:0 !important;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-end;
-  overflow:visible !important;
-  transform:translate(-50%,-50%) scale(var(--token-scale,1)) !important;
-  transform-origin:center bottom !important;
-}
-.combat-token img{
-  display:block;
-  width:700px !important;
-  height:auto !important;
-  max-width:none !important;
-  max-height:none !important;
-  object-fit:contain !important;
-  object-position:center bottom !important;
-  flex:0 0 auto !important;
-}
-.combat-token small{
-  margin-top:5px;
-  position:relative;
-  z-index:2;
-}
+/* AJUSTE DEFINITIVO: sprites grandes, proporcionais e rolagem acessível no combate */
 .combat-board-page{
   height:calc(100vh - 105px);
-  min-height:500px;
-  overflow-y:auto !important;
-  overflow-x:hidden !important;
-  scrollbar-width:thin;
-  scrollbar-color:#b78b43 #182231;
-  padding-bottom:32px;
-}
-.combat-board-page::-webkit-scrollbar{width:12px}
-.combat-board-page::-webkit-scrollbar-track{background:#182231;border-radius:8px}
-.combat-board-page::-webkit-scrollbar-thumb{background:#b78b43;border:3px solid #182231;border-radius:8px}
-.combat-board-layout{align-items:start}
-.combat-hud{
-  max-height:calc(100vh - 170px);
+  min-height:0;
   overflow-y:auto;
-  scrollbar-width:thin;
-  scrollbar-color:#b78b43 #182231;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:#718096 #172131;
+  padding-bottom:30px;
 }
-.combat-hud::-webkit-scrollbar{width:9px}
-.combat-hud::-webkit-scrollbar-thumb{background:#b78b43;border:2px solid #182231;border-radius:8px}
-@media(max-width:900px){
-  .combat-board-page{height:auto;max-height:none;min-height:0;overflow:visible !important}
-  .combat-hud{max-height:none;overflow:visible}
-  .combat-token,.combat-token img{width:min(700px,92vw) !important}
+.combat-board-layout{align-items:start;min-height:0;}
+.combat-hud{
+  max-height:calc(100vh - 180px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:#718096 #172131;
+  overscroll-behavior:contain;
 }
+.combat-board-page::-webkit-scrollbar,
+.combat-hud::-webkit-scrollbar{width:13px;}
+.combat-board-page::-webkit-scrollbar-track,
+.combat-hud::-webkit-scrollbar-track{background:#172131;border-radius:10px;}
+.combat-board-page::-webkit-scrollbar-thumb,
+.combat-hud::-webkit-scrollbar-thumb{background:#718096;border:3px solid #172131;border-radius:10px;}
+.combat-board-page::-webkit-scrollbar-thumb:hover,
+.combat-hud::-webkit-scrollbar-thumb:hover{background:#a0aec0;}
 
-/* Ataque 4 do Homem de Ferro: seleção de três alvos e explosões */
-.combat-board.missile-target{cursor:crosshair;outline:2px solid #f28a32;outline-offset:-3px}
-.combat-board.missile-target .combat-token{cursor:crosshair}
-.combat-missile-hint{border-color:#f28a32;background:#3b2114ee;color:#ffe2c2}
-.combat-missile-explosion{position:absolute;z-index:5;width:150px;height:auto;max-width:none;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none;user-select:none;image-rendering:pixelated}
-@media(max-width:600px){.combat-missile-explosion{width:120px}}
+/* Somente Homem de Ferro, Noturno, Homem-Aranha e Doutor Estranho usam sprites de 200px.
+   A altura fica automática: a proporção original de cada PNG é preservada. */
+.combat-token.animated-character{
+  width:200px;
+  height:auto;
+  min-height:0;
+  overflow:visible;
+  transform:translate(-50%,-50%) scale(var(--token-scale,1));
+  transform-origin:center bottom;
+}
+.combat-token.animated-character img{
+  display:block;
+  width:200px;
+  height:auto;
+  max-width:none;
+  max-height:none;
+  flex:0 0 auto;
+  object-fit:contain;
+  object-position:center bottom;
+  user-select:none;
+  pointer-events:none;
+}
+/* O controle lateral continua compacto; a escala de 200px só vale para os sprites no tabuleiro. */
+.combat-portrait img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain;}
+@media(max-width:900px){
+  .combat-board-page{height:auto;max-height:none;min-height:calc(100vh - 100px);overflow:visible;}
+  .combat-hud{max-height:none;overflow:visible;}
+  .combat-board-layout{grid-template-columns:1fr;}
+  .combat-board{height:68vh;min-height:460px;}
+}
+@media(max-width:600px){
+  .combat-board-page{padding:12px;height:auto;}
+  .combat-token.animated-character,.combat-token.animated-character img{width:200px;}
+  .combat-token.animated-character img{height:auto;}
+}

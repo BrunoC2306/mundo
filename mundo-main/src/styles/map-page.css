@@ -1,0 +1,124 @@
+.map-page{padding:28px clamp(16px,3vw,42px);color:var(--text,#edf0f6);min-height:100%;display:flex;flex-direction:column;gap:18px}.map-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.map-toolbar>div:first-of-type{flex:1}.map-toolbar h1{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.03em}.map-toolbar p{margin:5px 0 0;color:var(--muted,#9ba5b5)}.map-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #414a5a;background:#1b2432;color:#f5f7fb;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer}.map-button:hover{background:#29364a}.map-master-label{font-size:12px;border:1px solid #725e37;background:#342b1b;color:#f1d49a;border-radius:20px;padding:7px 11px}.map-world{position:relative;display:block;width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-color:#121a26;background-size:contain !important;background-position:center;background-repeat:no-repeat;border:1px solid #384355;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px #0004}.map-world:after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 80px #07101d55}.map-place{position:absolute;z-index:1;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;color:#fff;cursor:pointer;max-width:150px;text-shadow:0 2px 5px #000}.map-place-icon{width:35px;height:35px;display:grid;place-items:center;border:2px solid #e8f2ff;border-radius:50%;background:#2463a9;box-shadow:0 3px 15px #0009;transition:transform .15s,background .15s}.map-place:hover .map-place-icon{transform:scale(1.14);background:#3b82d0}.map-place.locked .map-place-icon{background:#343b47;border-color:#a9b2bf;color:#d6dbe3}.map-place-name{font-size:12px;line-height:1.15;font-weight:750;text-align:center;padding:4px 6px;border-radius:6px;background:#07101dd9;max-width:150px}.map-place-lock{font-size:10px;color:#f3d7a0;background:#211d18e8;border-radius:5px;padding:2px 5px}.map-footnote,.map-add-scene small{color:var(--muted,#9ba5b5);font-size:12px}.map-locked,.map-empty{border:1px dashed #424e60;border-radius:16px;padding:45px 20px;text-align:center;color:#aeb8c7}.map-locked h2{color:#f0f3f8}.map-add-scene{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#141c29;border:1px solid #303b4b;border-radius:14px;padding:16px}.map-add-scene h3{width:100%;display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:16px}.map-add-scene input,.map-inline-form input{min-width:190px;flex:1;border:1px solid #3d4859;border-radius:9px;background:#0d1420;color:#f5f7fb;padding:11px 12px}.map-add-scene small{width:100%}.map-scene-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}.map-scene-card{overflow:hidden;border:1px solid #303b4b;border-radius:14px;background:#141c29}.map-scene-open{width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.map-scene-open img{width:100%;height:165px;object-fit:cover;display:block;background:#0b111b}.map-scene-open span,.map-scene-open small{display:block;padding:10px 12px 0;font-weight:700}.map-scene-open small{padding-top:4px;padding-bottom:12px;color:#9ba5b5;font-weight:500}.map-scene-actions{display:flex;justify-content:space-between;padding:9px 10px;border-top:1px solid #303b4b}.map-scene-actions button{display:inline-flex;align-items:center;gap:6px;color:#c7d7ef;background:transparent;border:0;cursor:pointer;padding:5px}.map-scene-actions button:hover{color:#fff}.map-scene-canvas{position:relative;width:100%;height:min(70vh,760px);min-height:380px;border:1px solid #384355;border-radius:16px;background-color:#0b111b;background-size:contain;background-position:center;background-repeat:no-repeat;overflow:hidden;touch-action:none}.map-scene-canvas.is-combat{background-size:100% 100%}.map-scene-caption{position:absolute;left:18px;bottom:18px;padding:9px 13px;border-radius:9px;background:#07101ddd;font-weight:700}.map-mode-switch{display:flex;gap:4px;background:#101722;border:1px solid #303b4b;padding:4px;border-radius:11px}.map-mode-switch button{display:flex;align-items:center;gap:6px;border:0;border-radius:8px;background:transparent;color:#aab4c4;padding:8px 11px;cursor:pointer}.map-mode-switch button.active{background:#2a3c55;color:#fff}.map-token{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:#fff;cursor:grab;touch-action:none;text-shadow:0 2px 5px #000}.map-token:active{cursor:grabbing}.map-token span{display:grid;place-items:center;width:42px;height:42px;border:2px solid white;border-radius:50%;background:#345e9b;font-size:25px;box-shadow:0 3px 12px #0009}.map-token small{background:#07101de8;border-radius:5px;padding:3px 6px;white-space:nowrap;font-size:11px;font-weight:700}.map-inline-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.map-inline-form span{font-size:12px;color:#9ba5b5;width:100%}.map-error{padding:10px 12px;border:1px solid #7d3b45;background:#321c24;border-radius:9px;color:#ffb9c2;margin:0}@media(max-width:200px){.map-page{padding:16px 12px}.map-world{width:100%;height:auto;min-height:0;aspect-ratio:3/2;max-height:none;background-size:contain !important;}.map-place-name{font-size:10px;max-width:100px}.map-place{max-width:105px}.map-scene-canvas{min-height:300px;height:60vh}.map-toolbar{align-items:flex-start}.map-mode-switch{width:100%}.map-mode-switch button{flex:1;justify-content:center}}
+/* Melhorias da área de cenas */
+.map-add-scene{align-items:stretch;gap:12px}
+.map-add-scene .map-scene-help{width:100%;margin:0;color:var(--muted,#9ba5b5);font-size:13px;line-height:1.5}
+.map-scene-field{display:flex;flex:1 1 260px;min-width:220px;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px;font-weight:700}
+.map-scene-field input{width:100%;min-width:0;box-sizing:border-box}
+.map-scene-preview{position:relative;flex:1 1 100%;max-width:560px;min-height:100px;max-height:260px;overflow:hidden;border:1px solid #39465a;border-radius:12px;background:#0b111b}
+.map-scene-preview img{display:none;width:100%;max-height:260px;object-fit:contain}
+.map-scene-preview span{display:block;padding:7px 10px;color:#9ba5b5;font-size:11px}
+.map-scene-card{transition:transform .18s,border-color .18s,box-shadow .18s}
+.map-scene-card:hover{transform:translateY(-2px);border-color:#526783;box-shadow:0 12px 28px #0003}
+.map-scene-open img{height:190px;transition:transform .25s}
+.map-scene-card:hover .map-scene-open img{transform:scale(1.025)}
+.map-scene-open span{font-size:15px;padding-top:12px}
+.map-scene-actions{align-items:center}
+@media(max-width:200px){.map-scene-field{min-width:100%;}.map-scene-open img{height:160px}}
+
+/* Fix: keep the full 3:2 world map visible; marker percentages remain unchanged. */
+.map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;background-position:center center;background-repeat:no-repeat;box-sizing:border-box;}
+@media(max-width:200px){.map-page .map-world{width:100%;height:auto;aspect-ratio:3/2;min-height:0;max-height:none;background-size:contain !important;}}
+
+
+/* Mapa mundial: a imagem e os marcadores compartilham exatamente a mesma área. */
+.map-world-viewport{width:100%;max-height:calc(100vh - 230px);min-height:320px;overflow:auto;overscroll-behavior:contain;position:relative;border:1px solid #384355;border-radius:18px;background:#121a26;box-shadow:0 18px 50px #0004;scrollbar-gutter:stable;}
+.map-world-viewport:focus-within{outline:2px solid #467ab5;outline-offset:2px}
+.map-page .map-world{position:relative;display:block;width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:auto;overflow:visible;border:0;border-radius:0;background:none;box-shadow:none;line-height:0}
+.map-page .map-world:after{display:none}
+.map-world-image{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;object-position:top left;user-select:none;pointer-events:none}
+.map-world-markers{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.map-world-markers .map-place{line-height:normal}
+@media(max-width:200px){.map-world-viewport{max-height:calc(100vh - 190px);min-height:260px;border-radius:12px}.map-page .map-world{width:100%;aspect-ratio:auto}.map-world-image{width:100%;height:auto;aspect-ratio:3/2;object-fit:contain}.map-world-markers .map-place-name{font-size:10px;max-width:100px}}
+
+/* Novo tabuleiro de combate com sprites dos personagens */
+.combat-board-page{display:flex;flex-direction:column;gap:14px;padding:18px;min-height:calc(100vh - 100px);color:#f4f6fb}
+.combat-board-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.combat-board-header h1{font-size:21px;margin:0}.combat-board-header p{margin:4px 0 0;color:#9ba5b5;font-size:12px}
+.combat-board-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:14px;min-height:560px;flex:1}
+.combat-board{position:relative;min-height:560px;border:1px solid #384355;border-radius:15px;background-color:#0b111b;background-size:100% 100%;background-position:center;background-repeat:no-repeat;overflow:hidden;touch-action:none}
+.combat-board.teleport-target{cursor:crosshair;outline:2px solid #9b83f6;outline-offset:-3px}
+.combat-token{position:absolute;z-index:2;transform:translate(-50%,-50%) scale(var(--token-scale,1));transform-origin:center bottom;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;width:100px;height:155px;padding:0;border:0;background:transparent;color:white;cursor:grab;touch-action:none;text-shadow:0 2px 5px #000;filter:drop-shadow(0 5px 5px #0008)}
+.combat-token img{display:block;max-width:100%;max-height:132px;width:auto;height:auto;object-fit:contain;user-select:none;pointer-events:none}.combat-token small{font-size:11px;font-weight:800;white-space:nowrap;background:#07101de8;border:1px solid #ffffff26;border-radius:5px;padding:3px 7px;line-height:1.2}
+.combat-token.selected{z-index:4;filter:drop-shadow(0 0 7px #e9bd61) drop-shadow(0 5px 5px #0008)}.combat-token.selected small{border-color:#e9bd61}.combat-token:active{cursor:grabbing}.combat-token.teleport-active img{filter:drop-shadow(0 0 14px #a58aff)}
+.combat-token-fallback{display:grid;place-items:center;width:46px;height:46px;border:2px solid white;border-radius:50%;background:#345e9b;font-size:25px}
+.combat-hud{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid #303b4b;border-radius:14px;background:#141c29;min-width:0}.combat-hud-title{display:flex;flex-direction:column;gap:5px;color:#e9bd61;font-size:9px;letter-spacing:.14em;font-weight:900}.combat-hud-title strong{color:#f5f7fb;font-size:17px;letter-spacing:0}.combat-add-list{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:10px;border-bottom:1px solid #303b4b}.combat-add-list span{width:100%;font-size:9px;letter-spacing:.12em;color:#e9bd61;font-weight:900}.combat-add-list button,.combat-actions button,.combat-shield{border:1px solid #414a5a;background:#1b2432;color:#f5f7fb;border-radius:9px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer}.combat-add-list button:hover,.combat-actions button:hover,.combat-shield:hover{background:#29364a}.combat-portrait{height:125px;display:grid;place-items:center;background:radial-gradient(ellipse,#28374b,#111925);border:1px solid #303b4b;border-radius:10px;overflow:hidden}.combat-portrait img{max-width:100%;max-height:120px;object-fit:contain}.combat-scale{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#cbd5e1;font-size:11px;flex-wrap:wrap}.combat-scale input{width:100%;accent-color:#e9bd61}.combat-action-title{font-size:9px;letter-spacing:.14em;color:#e9bd61;font-weight:900}.combat-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.combat-actions button.active,.combat-shield.active{border-color:#a58aff;background:#30264f;color:#eee6ff;box-shadow:0 0 0 2px #a58aff24}.combat-shield{display:flex;align-items:center;justify-content:center;gap:7px}.combat-action-status,.combat-note{margin:0;padding:9px 10px;border-radius:8px;background:#0e1724;color:#c7d7ef;font-size:11px;line-height:1.45}.combat-remove{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:auto;border:1px solid #713b45;background:#321c24;color:#ffc1c8;border-radius:9px;padding:9px;cursor:pointer}.combat-teleport-hint{position:absolute;z-index:8;top:12px;left:50%;transform:translateX(-50%);padding:10px 14px;border:1px solid #a58aff;border-radius:9px;background:#21183eef;color:#eee6ff;font-size:12px;font-weight:900;white-space:nowrap;pointer-events:none}.combat-empty{position:absolute;inset:0;display:grid;place-items:center;color:#cbd5e1;text-shadow:0 2px 5px #000}.combat-saving{position:absolute;right:12px;bottom:12px;padding:7px 10px;background:#101722dd;border-radius:7px;color:#fff;font-size:11px}
+@media(max-width:900px){.combat-board-layout{grid-template-columns:1fr}.combat-board{min-height:55vh}.combat-hud{order:2}}
+@media(max-width:600px){.combat-board-page{padding:12px}.combat-board{min-height:430px}.combat-token{width:78px;height:125px}.combat-token img{max-height:105px}.combat-teleport-hint{font-size:10px;max-width:92%;white-space:normal;text-align:center}}
+
+
+/* Normalização das poses: todas as artes dos quatro personagens usam o mesmo quadro 1200x512. */
+.combat-portrait img{width:100%;height:120px;max-width:100%;max-height:120px;object-fit:contain}
+
+/* Correção de proporção, escala persistente por personagem e rolagem vertical do combate */
+.combat-board-page{min-height:calc(100vh - 100px);height:auto;overflow-y:auto;overflow-x:hidden;padding-bottom:28px}
+.combat-board-layout{align-items:start;min-height:0}
+.combat-board{min-height: min(72vh, 820px);height:72vh;max-height:820px;overflow:hidden}
+.combat-token{width:112px;height:170px;overflow:visible;transform:translate(-50%,-50%) scale(var(--token-scale,1));transform-origin:center bottom}
+.combat-token img{display:block;width:100%;height:142px;max-width:100%;max-height:142px;object-fit:contain;object-position:center bottom;flex:0 0 142px;user-select:none;pointer-events:none}
+.combat-portrait img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain}
+@media(max-width:900px){.combat-board-layout{grid-template-columns:1fr}.combat-board{height:68vh;min-height:460px}}
+@media(max-width:600px){.combat-token{width:90px;height:138px}.combat-token img{height:114px;max-height:114px;flex-basis:114px}.combat-board{height:62vh;min-height:420px}}
+
+
+/* AJUSTE DEFINITIVO: sprites grandes, proporcionais e rolagem acessível no combate */
+.combat-board-page{
+  height:calc(100vh - 105px);
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:#718096 #172131;
+  padding-bottom:30px;
+}
+.combat-board-layout{align-items:start;min-height:0;}
+.combat-hud{
+  max-height:calc(100vh - 180px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:#718096 #172131;
+  overscroll-behavior:contain;
+}
+.combat-board-page::-webkit-scrollbar,
+.combat-hud::-webkit-scrollbar{width:13px;}
+.combat-board-page::-webkit-scrollbar-track,
+.combat-hud::-webkit-scrollbar-track{background:#172131;border-radius:10px;}
+.combat-board-page::-webkit-scrollbar-thumb,
+.combat-hud::-webkit-scrollbar-thumb{background:#718096;border:3px solid #172131;border-radius:10px;}
+.combat-board-page::-webkit-scrollbar-thumb:hover,
+.combat-hud::-webkit-scrollbar-thumb:hover{background:#a0aec0;}
+
+/* Somente Homem de Ferro, Noturno, Homem-Aranha e Doutor Estranho usam sprites de 700px.
+   A altura fica automática: a proporção original de cada PNG é preservada. */
+.combat-token.animated-character{
+  width:700px;
+  height:auto;
+  min-height:0;
+  overflow:visible;
+  transform:translate(-50%,-50%) scale(var(--token-scale,1));
+  transform-origin:center bottom;
+}
+.combat-token.animated-character img{
+  display:block;
+  width:700px;
+  height:auto;
+  max-width:none;
+  max-height:none;
+  flex:0 0 auto;
+  object-fit:contain;
+  object-position:center bottom;
+  user-select:none;
+  pointer-events:none;
+}
+/* O controle lateral continua compacto; a escala de 700px só vale para os sprites no tabuleiro. */
+.combat-portrait img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain;}
+@media(max-width:900px){
+  .combat-board-page{height:auto;max-height:none;min-height:calc(100vh - 100px);overflow:visible;}
+  .combat-hud{max-height:none;overflow:visible;}
+  .combat-board-layout{grid-template-columns:1fr;}
+  .combat-board{height:68vh;min-height:460px;}
+}
+@media(max-width:600px){
+  .combat-board-page{padding:12px;height:auto;}
+  .combat-token.animated-character,.combat-token.animated-character img{width:700px;}
+  .combat-token.animated-character img{height:auto;}
+}

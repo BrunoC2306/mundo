@@ -57,3 +57,68 @@
 .combat-portrait img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain}
 @media(max-width:900px){.combat-board-layout{grid-template-columns:1fr}.combat-board{height:68vh;min-height:460px}}
 @media(max-width:600px){.combat-token{width:90px;height:138px}.combat-token img{height:114px;max-height:114px;flex-basis:114px}.combat-board{height:62vh;min-height:420px}}
+
+
+/* AJUSTE DEFINITIVO: sprites grandes, proporcionais e rolagem acessível no combate */
+.combat-board-page{
+  height:calc(100vh - 105px);
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:#718096 #172131;
+  padding-bottom:30px;
+}
+.combat-board-layout{align-items:start;min-height:0;}
+.combat-hud{
+  max-height:calc(100vh - 180px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:#718096 #172131;
+  overscroll-behavior:contain;
+}
+.combat-board-page::-webkit-scrollbar,
+.combat-hud::-webkit-scrollbar{width:13px;}
+.combat-board-page::-webkit-scrollbar-track,
+.combat-hud::-webkit-scrollbar-track{background:#172131;border-radius:10px;}
+.combat-board-page::-webkit-scrollbar-thumb,
+.combat-hud::-webkit-scrollbar-thumb{background:#718096;border:3px solid #172131;border-radius:10px;}
+.combat-board-page::-webkit-scrollbar-thumb:hover,
+.combat-hud::-webkit-scrollbar-thumb:hover{background:#a0aec0;}
+
+/* Somente Homem de Ferro, Noturno, Homem-Aranha e Doutor Estranho usam sprites de 700px.
+   A altura fica automática: a proporção original de cada PNG é preservada. */
+.combat-token.animated-character{
+  width:700px;
+  height:auto;
+  min-height:0;
+  overflow:visible;
+  transform:translate(-50%,-50%) scale(var(--token-scale,1));
+  transform-origin:center bottom;
+}
+.combat-token.animated-character img{
+  display:block;
+  width:700px;
+  height:auto;
+  max-width:none;
+  max-height:none;
+  flex:0 0 auto;
+  object-fit:contain;
+  object-position:center bottom;
+  user-select:none;
+  pointer-events:none;
+}
+/* O controle lateral continua compacto; a escala de 700px só vale para os sprites no tabuleiro. */
+.combat-portrait img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain;}
+@media(max-width:900px){
+  .combat-board-page{height:auto;max-height:none;min-height:calc(100vh - 100px);overflow:visible;}
+  .combat-hud{max-height:none;overflow:visible;}
+  .combat-board-layout{grid-template-columns:1fr;}
+  .combat-board{height:68vh;min-height:460px;}
+}
+@media(max-width:600px){
+  .combat-board-page{padding:12px;height:auto;}
+  .combat-token.animated-character,.combat-token.animated-character img{width:700px;}
+  .combat-token.animated-character img{height:auto;}
+}

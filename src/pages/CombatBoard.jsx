@@ -109,7 +109,7 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
     <header className="combat-board-header"><button className="map-button" onClick={onBack}><ArrowLeft size={16}/> Voltar à cena</button><div><h1>{scene.title}</h1><p>Combate · {tokens.length} personagem(ns)</p></div></header>
     <div className="combat-board-layout">
       <div ref={board} className={`combat-board ${teleportId?'teleport-target':''}`} style={{backgroundImage:`linear-gradient(#05080e12,#05080e22),url("${scene.image_url}")`}} onClick={boardClick} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
-        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':scales[t.id] ?? 1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
+        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${['Homem de Ferro','Noturno','Homem-Aranha','Doutor Estranho'].includes(t.name)?'animated-character':''} ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':scales[t.id] ?? 1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
           {c?<img src={srcFor(t)} alt={t.name} draggable="false"/>:<span className="combat-token-fallback">{t.emoji||'♟'}</span>}<small>{t.name}</small>
         </button>})}
         {!tokens.length&&<div className="combat-empty">Adicione personagens para começar.</div>}
@@ -121,7 +121,7 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
         {isMaster&&<div className="combat-add-list"><span>ADICIONAR AO MAPA</span>{Object.keys(CHARACTERS).map(name=><button key={name} onClick={()=>onAddCharacter(name)}>＋ {name}</button>)}</div>}
         {selected&&character?<>
           <div className="combat-portrait"><img src={srcFor(selected)} alt={selected.name}/></div>
-          <label className="combat-scale">Tamanho <b>{Math.round(selectedScale*100)}%</b><input type="range" min=".5" max="1.8" step=".05" value={selectedScale} onChange={e=>setScales(v=>({...v,[selected.id]:Number(e.target.value)}))}/></label>
+          <label className="combat-scale">Tamanho <b>{Math.round(selectedScale*100)}%</b><input type="range" min=".5" max="2.5" step=".05" value={selectedScale} onChange={e=>setScales(v=>({...v,[selected.id]:Number(e.target.value)}))}/></label>
           <div className="combat-action-title">AÇÕES</div><div className="combat-actions">{character.actions.map(([id,label,mode])=><button key={id} className={id==='teleport'&&teleportId===selected.id?'active':''} disabled={!!teleportId&&teleportId!==selected.id} onClick={()=>mode?toggleTeleport(selected):playAction(selected,id,label)}>{label}</button>)}</div>
           {character.shield&&<button className={`combat-shield ${shielded[selected.id]?'active':''}`} onClick={()=>toggleShield(selected)}>{shielded[selected.id]?<ShieldOff size={16}/>:<Shield size={16}/>} {shielded[selected.id]?'Desativar escudo':'Ativar escudo'}</button>}
           {actionLabel&&<p className="combat-action-status">{actionLabel}</p>}

@@ -46,7 +46,14 @@
 
 
 /* Normalização das poses: todas as artes dos quatro personagens usam o mesmo quadro 1200x512. */
-.combat-token{width:309px;height:155px;overflow:visible}
-.combat-token img{display:block;width:309px;height:132px;max-width:none;max-height:none;object-fit:fill;flex:0 0 132px;user-select:none;pointer-events:none}
 .combat-portrait img{width:100%;height:120px;max-width:100%;max-height:120px;object-fit:contain}
-@media(max-width:600px){.combat-token{width:250px;height:125px}.combat-token img{width:250px;height:107px;flex-basis:107px}}
+
+/* Correção de proporção, escala persistente por personagem e rolagem vertical do combate */
+.combat-board-page{min-height:calc(100vh - 100px);height:auto;overflow-y:auto;overflow-x:hidden;padding-bottom:28px}
+.combat-board-layout{align-items:start;min-height:0}
+.combat-board{min-height: min(72vh, 820px);height:72vh;max-height:820px;overflow:hidden}
+.combat-token{width:112px;height:170px;overflow:visible;transform:translate(-50%,-50%) scale(var(--token-scale,1));transform-origin:center bottom}
+.combat-token img{display:block;width:100%;height:142px;max-width:100%;max-height:142px;object-fit:contain;object-position:center bottom;flex:0 0 142px;user-select:none;pointer-events:none}
+.combat-portrait img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain}
+@media(max-width:900px){.combat-board-layout{grid-template-columns:1fr}.combat-board{height:68vh;min-height:460px}}
+@media(max-width:600px){.combat-token{width:90px;height:138px}.combat-token img{height:114px;max-height:114px;flex-basis:114px}.combat-board{height:62vh;min-height:420px}}

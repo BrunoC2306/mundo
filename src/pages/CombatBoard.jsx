@@ -130,7 +130,7 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
         {isMaster&&<div className="combat-add-list"><span>ADICIONAR AO MAPA</span>{Object.keys(CHARACTERS).map(name=><button key={name} onClick={()=>onAddCharacter(name)}>＋ {name}</button>)}</div>}
         {selected&&character?<>
           <div className="combat-portrait"><img src={srcFor(selected)} alt={selected.name}/></div>
-          <label className="combat-scale">Tamanho <b>{Math.round(selectedScale*100)}%</b><input type="range" min=".5" max="1.8" step=".05" value={selectedScale} onChange={e=>setScales(v=>({...v,[selected.id]:Number(e.target.value)}))}/></label>
+          <label className="combat-scale">Tamanho <b>{Math.round(selectedScale*100)}%</b><input type="range" min=".1" max="1.8" step=".05" value={selectedScale} onChange={e=>setScales(v=>({...v,[selected.id]:Number(e.target.value)}))}/></label>
           <div className="combat-action-title">AÇÕES</div><div className="combat-actions">{character.actions.map(([id,label,mode])=><button key={id} className={(id==='teleport'&&teleportId===selected.id)||(id==='attack4'&&missileId===selected.id)?'active':''} disabled={(!!teleportId&&teleportId!==selected.id)||(!!missileId&&missileId!==selected.id)} onClick={()=>mode?toggleTeleport(selected):playAction(selected,id,label)}>{label}</button>)}</div>
           {character.shield&&<button className={`combat-shield ${shielded[selected.id]?'active':''}`} onClick={()=>toggleShield(selected)}>{shielded[selected.id]?<ShieldOff size={16}/>:<Shield size={16}/>} {shielded[selected.id]?'Desativar escudo':'Ativar escudo'}</button>}
           {actionLabel&&<p className="combat-action-status">{actionLabel}</p>}

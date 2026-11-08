@@ -48,8 +48,8 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
   const [actionLabel,setActionLabel]=useState('')
   const [scales,setScales]=useState({})
   const [saving,setSaving]=useState(false)
-  const drag=useRef(null); const timer=useRef({}); const board=useRef(null)
-  useEffect(()=>()=>Object.values(timer.current).forEach(clearTimeout),[])
+  const drag=useRef(null); const timer=useRef({}); const board=useRef(null); const missileCleanup=useRef(null)
+  useEffect(()=>()=>{Object.values(timer.current).forEach(clearTimeout); if(missileCleanup.current)clearTimeout(missileCleanup.current)},[])
   const selected=tokens.find(t=>t.id===selectedId)||tokens[0]||null
   const selectedScale=selected ? (scales[selected.id] ?? 1) : 1
   const character=getCharacter(selected)
@@ -64,6 +64,8 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
       setTeleportId(null)
       setMissileId(token.id)
       setMissileTargets([])
+      setExplosions([])
+      if(missileCleanup.current)clearTimeout(missileCleanup.current)
       setPose(token.id, 'attack4')
       setActionLabel('Mísseis: escolha 3 pontos no mapa (pode repetir o mesmo alvo)')
       return
@@ -92,7 +94,10 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
         setMissileId(null)
         setMissileTargets([])
         setPose(missileId,'idle')
-        setActionLabel('3 mísseis lançados!')
+        setActionLabel('Ataque 4 realizado!')
+        // Mantém as explosões visíveis brevemente e limpa os marcadores ao concluir o ataque.
+        if(missileCleanup.current)clearTimeout(missileCleanup.current)
+        missileCleanup.current=setTimeout(()=>setExplosions([]),1200)
       } else {
         setActionLabel(`Mísseis: ${next.length}/3 lançados — escolha o próximo ponto`)
       }

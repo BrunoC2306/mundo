@@ -44,22 +44,36 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
   const [teleportId,setTeleportId]=useState(null)
   const [actionLabel,setActionLabel]=useState('')
   const [scales,setScales]=useState({})
-  const selectedScale=selected ? (scales[selected.id] ?? 1) : 1
   const [saving,setSaving]=useState(false)
   const drag=useRef(null); const timer=useRef({}); const board=useRef(null)
   useEffect(()=>()=>Object.values(timer.current).forEach(clearTimeout),[])
   const selected=tokens.find(t=>t.id===selectedId)||tokens[0]||null
+  const selectedScale=selected ? (scales[selected.id] ?? 1) : 1
   const character=getCharacter(selected)
-  const poseFor=t=> t?.name==='Doutor Estranho'&&shielded[t.id] ? 'shieldIdle' : poses[t?.id]||'idle'
+  const poseFor=t=> {
+    if (!t) return 'idle'
+    const current=poses[t.id]||'idle'
+    // O escudo fica como pose padrão, mas não bloqueia a exibição do Laço/Olho durante a ação.
+    if (t.name==='Doutor Estranho' && shielded[t.id] && ['idle','shield','shieldIdle'].includes(current)) return 'shieldIdle'
+    return current
+  }
   const srcFor=t=>imagePath(t,poseFor(t))
   const setPose=(id,p)=>setPoses(v=>({...v,[id]:p}))
 
   function playAction(token,id,label) {
     clearTimeout(timer.current[token.id]); setSelectedId(token.id); setActionLabel(label); setPose(token.id,id)
-    timer.current[token.id]=setTimeout(()=>{setPose(token.id,token.name==='Doutor Estranho'&&shielded[token.id]?'shieldIdle':'idle');setActionLabel(shielded[token.id]&&token.name==='Doutor Estranho'?'Escudo ativo':'')},1000)
+    timer.current[token.id]=setTimeout(()=>{
+      const shieldStillActive=token.name==='Doutor Estranho' && shielded[token.id]
+      setPose(token.id,shieldStillActive?'shieldIdle':'idle')
+      setActionLabel(shieldStillActive?'Escudo ativo':'')
+    },1000)
   }
   function toggleShield(token) {
-    const next=!shielded[token.id]; clearTimeout(timer.current[token.id]); setShielded(v=>({...v,[token.id]:next})); setPose(token.id,next?'shieldIdle':'idle'); setActionLabel(next?'Escudo ativo':'Escudo desativado')
+    const next=!shielded[token.id]
+    clearTimeout(timer.current[token.id])
+    setShielded(v=>({...v,[token.id]:next}))
+    setPose(token.id,next?'shieldIdle':'idle')
+    setActionLabel(next?'Escudo ativo':'Escudo desativado')
   }
   function toggleTeleport(token) {
     if(teleportId===token.id){setTeleportId(null);setActionLabel('');return}
@@ -69,11 +83,27 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
     if(!teleportId || e.target.closest('.combat-token')) return
     const token=tokens.find(t=>t.id===teleportId); if(!token||!board.current)return
     const r=board.current.getBoundingClientRect(); const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100)); const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100))
-    setSaving(true); await onMoveToken(token.id,x,y); setSaving(false); setPose(token.id,'teleport'); setSelectedId(token.id); setTeleportId(null); setActionLabel('Teleporte realizado')
+    setSaving(true)
+    try {
+      await onMoveToken(token.id,x,y,true)
+      setPose(token.id,'teleport')
+      setSelectedId(token.id)
+      setTeleportId(null)
+      setActionLabel('Teleporte realizado')
+    } finally { setSaving(false) }
   }
   function startDrag(e,t) { if(!isMaster||teleportId)return; e.preventDefault();e.stopPropagation();setSelectedId(t.id);drag.current={id:t.id,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};e.currentTarget.setPointerCapture?.(e.pointerId) }
   function moveDrag(e) { const d=drag.current;if(!d||!board.current)return;const r=board.current.getBoundingClientRect();if(Math.abs(e.clientX-d.x)+Math.abs(e.clientY-d.y)>3)d.moved=true;if(!d.moved)return;const dx=e.clientX-d.lastX;if(Math.abs(dx)>1)setPose(d.id,dx<0?'left':'right');const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100));const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100));d.px=x;d.py=y;d.lastX=e.clientX;d.lastY=e.clientY;onMoveToken(d.id,x,y,false) }
-  async function endDrag(){const d=drag.current;if(!d)return;drag.current=null;if(d.moved){setSaving(true);await onMoveToken(d.id,d.px,d.py,true);setSaving(false);setPose(d.id,'idle')}}
+  async function endDrag(){
+    const d=drag.current
+    if(!d)return
+    drag.current=null
+    if(d.moved){
+      setSaving(true)
+      try { await onMoveToken(d.id,d.px,d.py,true) }
+      finally { setSaving(false); setPose(d.id,'idle') }
+    }
+  }
 
   return <section className="combat-board-page">
     <header className="combat-board-header"><button className="map-button" onClick={onBack}><ArrowLeft size={16}/> Voltar à cena</button><div><h1>{scene.title}</h1><p>Combate · {tokens.length} personagem(ns)</p></div></header>

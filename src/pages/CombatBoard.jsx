@@ -42,6 +42,9 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
   const [poses,setPoses]=useState({})
   const [shielded,setShielded]=useState({})
   const [teleportId,setTeleportId]=useState(null)
+  const [missileId,setMissileId]=useState(null)
+  const [missileTargets,setMissileTargets]=useState([])
+  const [explosions,setExplosions]=useState([])
   const [actionLabel,setActionLabel]=useState('')
   const [scales,setScales]=useState({})
   const [saving,setSaving]=useState(false)
@@ -50,70 +53,71 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
   const selected=tokens.find(t=>t.id===selectedId)||tokens[0]||null
   const selectedScale=selected ? (scales[selected.id] ?? 1) : 1
   const character=getCharacter(selected)
-  const poseFor=t=> {
-    if (!t) return 'idle'
-    const current=poses[t.id]||'idle'
-    // O escudo fica como pose padrão, mas não bloqueia a exibição do Laço/Olho durante a ação.
-    if (t.name==='Doutor Estranho' && shielded[t.id] && ['idle','shield','shieldIdle'].includes(current)) return 'shieldIdle'
-    return current
-  }
+  const poseFor=t=> t?.name==='Doutor Estranho'&&shielded[t.id] ? 'shieldIdle' : poses[t?.id]||'idle'
   const srcFor=t=>imagePath(t,poseFor(t))
   const setPose=(id,p)=>setPoses(v=>({...v,[id]:p}))
 
   function playAction(token,id,label) {
+    if (id === 'attack4' && token.name === 'Homem de Ferro') {
+      clearTimeout(timer.current[token.id])
+      setSelectedId(token.id)
+      setTeleportId(null)
+      setMissileId(token.id)
+      setMissileTargets([])
+      setPose(token.id, 'attack4')
+      setActionLabel('Mísseis: escolha 3 pontos no mapa (pode repetir o mesmo alvo)')
+      return
+    }
     clearTimeout(timer.current[token.id]); setSelectedId(token.id); setActionLabel(label); setPose(token.id,id)
-    timer.current[token.id]=setTimeout(()=>{
-      const shieldStillActive=token.name==='Doutor Estranho' && shielded[token.id]
-      setPose(token.id,shieldStillActive?'shieldIdle':'idle')
-      setActionLabel(shieldStillActive?'Escudo ativo':'')
-    },1000)
+    timer.current[token.id]=setTimeout(()=>{setPose(token.id,token.name==='Doutor Estranho'&&shielded[token.id]?'shieldIdle':'idle');setActionLabel(shielded[token.id]&&token.name==='Doutor Estranho'?'Escudo ativo':'')},1000)
   }
   function toggleShield(token) {
-    const next=!shielded[token.id]
-    clearTimeout(timer.current[token.id])
-    setShielded(v=>({...v,[token.id]:next}))
-    setPose(token.id,next?'shieldIdle':'idle')
-    setActionLabel(next?'Escudo ativo':'Escudo desativado')
+    const next=!shielded[token.id]; clearTimeout(timer.current[token.id]); setShielded(v=>({...v,[token.id]:next})); setPose(token.id,next?'shieldIdle':'idle'); setActionLabel(next?'Escudo ativo':'Escudo desativado')
   }
   function toggleTeleport(token) {
     if(teleportId===token.id){setTeleportId(null);setActionLabel('');return}
     setSelectedId(token.id);setTeleportId(token.id);setActionLabel('Clique no destino do mapa para teleportar')
   }
   async function boardClick(e) {
-    if(!teleportId || e.target.closest('.combat-token')) return
-    const token=tokens.find(t=>t.id===teleportId); if(!token||!board.current)return
-    const r=board.current.getBoundingClientRect(); const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100)); const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100))
-    setSaving(true)
-    try {
-      await onMoveToken(token.id,x,y,true)
-      setPose(token.id,'teleport')
-      setSelectedId(token.id)
-      setTeleportId(null)
-      setActionLabel('Teleporte realizado')
-    } finally { setSaving(false) }
-  }
-  function startDrag(e,t) { if(!isMaster||teleportId)return; e.preventDefault();e.stopPropagation();setSelectedId(t.id);drag.current={id:t.id,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};e.currentTarget.setPointerCapture?.(e.pointerId) }
-  function moveDrag(e) { const d=drag.current;if(!d||!board.current)return;const r=board.current.getBoundingClientRect();if(Math.abs(e.clientX-d.x)+Math.abs(e.clientY-d.y)>3)d.moved=true;if(!d.moved)return;const dx=e.clientX-d.lastX;if(Math.abs(dx)>1)setPose(d.id,dx<0?'left':'right');const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100));const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100));d.px=x;d.py=y;d.lastX=e.clientX;d.lastY=e.clientY;onMoveToken(d.id,x,y,false) }
-  async function endDrag(){
-    const d=drag.current
-    if(!d)return
-    drag.current=null
-    if(d.moved){
-      setSaving(true)
-      try { await onMoveToken(d.id,d.px,d.py,true) }
-      finally { setSaving(false); setPose(d.id,'idle') }
+    if (e.target.closest('.combat-token') || !board.current) return
+    const r=board.current.getBoundingClientRect()
+    const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100))
+    const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100))
+
+    if (missileId) {
+      const next=[...missileTargets,{x,y}]
+      setMissileTargets(next)
+      setExplosions(old=>[...old,{id:`${Date.now()}-${old.length}-${Math.random()}`,x,y}])
+      if (next.length >= 3) {
+        setMissileId(null)
+        setMissileTargets([])
+        setPose(missileId,'idle')
+        setActionLabel('3 mísseis lançados!')
+      } else {
+        setActionLabel(`Mísseis: ${next.length}/3 lançados — escolha o próximo ponto`)
+      }
+      return
     }
+
+    if (!teleportId) return
+    const token=tokens.find(t=>t.id===teleportId); if(!token)return
+    setSaving(true); await onMoveToken(token.id,x,y); setSaving(false); setPose(token.id,'teleport'); setSelectedId(token.id); setTeleportId(null); setActionLabel('Teleporte realizado')
   }
+  function startDrag(e,t) { if(!isMaster||teleportId||missileId)return; e.preventDefault();e.stopPropagation();setSelectedId(t.id);drag.current={id:t.id,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};e.currentTarget.setPointerCapture?.(e.pointerId) }
+  function moveDrag(e) { const d=drag.current;if(!d||!board.current)return;const r=board.current.getBoundingClientRect();if(Math.abs(e.clientX-d.x)+Math.abs(e.clientY-d.y)>3)d.moved=true;if(!d.moved)return;const dx=e.clientX-d.lastX;if(Math.abs(dx)>1)setPose(d.id,dx<0?'left':'right');const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100));const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100));d.px=x;d.py=y;d.lastX=e.clientX;d.lastY=e.clientY;onMoveToken(d.id,x,y,false) }
+  async function endDrag(){const d=drag.current;if(!d)return;drag.current=null;if(d.moved){setSaving(true);await onMoveToken(d.id,d.px,d.py,true);setSaving(false);setPose(d.id,'idle')}}
 
   return <section className="combat-board-page">
     <header className="combat-board-header"><button className="map-button" onClick={onBack}><ArrowLeft size={16}/> Voltar à cena</button><div><h1>{scene.title}</h1><p>Combate · {tokens.length} personagem(ns)</p></div></header>
     <div className="combat-board-layout">
-      <div ref={board} className={`combat-board ${teleportId?'teleport-target':''}`} style={{backgroundImage:`linear-gradient(#05080e12,#05080e22),url("${scene.image_url}")`}} onClick={boardClick} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
-        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${['Homem de Ferro','Noturno','Homem-Aranha','Doutor Estranho'].includes(t.name)?'animated-character':''} ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':scales[t.id] ?? 1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
+      <div ref={board} className={`combat-board ${teleportId?'teleport-target':''} ${missileId?'missile-target':''}`} style={{backgroundImage:`linear-gradient(#05080e12,#05080e22),url("${scene.image_url}")`}} onClick={boardClick} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+        {explosions.map((blast,i)=><img key={blast.id} className="combat-missile-explosion" src="/characters/iron-man/missile-explosion.png" alt="Explosão de míssil" style={{left:`${blast.x}%`,top:`${blast.y}%`}} />)}
+        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':scales[t.id] ?? 1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();if(missileId||teleportId)return;setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
           {c?<img src={srcFor(t)} alt={t.name} draggable="false"/>:<span className="combat-token-fallback">{t.emoji||'♟'}</span>}<small>{t.name}</small>
         </button>})}
         {!tokens.length&&<div className="combat-empty">Adicione personagens para começar.</div>}
         {teleportId&&<div className="combat-teleport-hint">🌀 TELEPORTE ATIVADO — clique no destino</div>}
+        {missileId&&<div className="combat-teleport-hint combat-missile-hint">🚀 MÍSSEIS {missileTargets.length}/3 — clique em 3 pontos do mapa; pode repetir o alvo</div>}
         {saving&&<div className="combat-saving">Salvando posição…</div>}
       </div>
       <aside className="combat-hud">
@@ -121,8 +125,8 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
         {isMaster&&<div className="combat-add-list"><span>ADICIONAR AO MAPA</span>{Object.keys(CHARACTERS).map(name=><button key={name} onClick={()=>onAddCharacter(name)}>＋ {name}</button>)}</div>}
         {selected&&character?<>
           <div className="combat-portrait"><img src={srcFor(selected)} alt={selected.name}/></div>
-          <label className="combat-scale">Tamanho <b>{Math.round(selectedScale*100)}%</b><input type="range" min=".5" max="2.5" step=".05" value={selectedScale} onChange={e=>setScales(v=>({...v,[selected.id]:Number(e.target.value)}))}/></label>
-          <div className="combat-action-title">AÇÕES</div><div className="combat-actions">{character.actions.map(([id,label,mode])=><button key={id} className={id==='teleport'&&teleportId===selected.id?'active':''} disabled={!!teleportId&&teleportId!==selected.id} onClick={()=>mode?toggleTeleport(selected):playAction(selected,id,label)}>{label}</button>)}</div>
+          <label className="combat-scale">Tamanho <b>{Math.round(selectedScale*100)}%</b><input type="range" min=".5" max="1.8" step=".05" value={selectedScale} onChange={e=>setScales(v=>({...v,[selected.id]:Number(e.target.value)}))}/></label>
+          <div className="combat-action-title">AÇÕES</div><div className="combat-actions">{character.actions.map(([id,label,mode])=><button key={id} className={(id==='teleport'&&teleportId===selected.id)||(id==='attack4'&&missileId===selected.id)?'active':''} disabled={(!!teleportId&&teleportId!==selected.id)||(!!missileId&&missileId!==selected.id)} onClick={()=>mode?toggleTeleport(selected):playAction(selected,id,label)}>{label}</button>)}</div>
           {character.shield&&<button className={`combat-shield ${shielded[selected.id]?'active':''}`} onClick={()=>toggleShield(selected)}>{shielded[selected.id]?<ShieldOff size={16}/>:<Shield size={16}/>} {shielded[selected.id]?'Desativar escudo':'Ativar escudo'}</button>}
           {actionLabel&&<p className="combat-action-status">{actionLabel}</p>}
           {selected.name==='Doutor Estranho'&&shielded[selected.id]&&<p className="combat-note">Escudo mantido. O Laço mágico pode ser usado sem desativá-lo.</p>}

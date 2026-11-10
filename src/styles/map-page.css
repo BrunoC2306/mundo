@@ -122,3 +122,20 @@
   .combat-token.animated-character,.combat-token.animated-character img{width:200px;}
   .combat-token.animated-character img{height:auto;}
 }
+
+/* Tamanho exclusivo dos quatro personagens especiais: 2000px. */
+.combat-token.animated-character {
+  width: 2000px !important;
+  height: auto !important;
+  min-height: 0;
+  overflow: visible;
+}
+.combat-token.animated-character img {
+  display: block;
+  width: 2000px !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain;
+  object-position: center bottom;
+}

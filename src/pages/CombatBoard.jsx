@@ -80,13 +80,29 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
     if(teleportId===token.id){setTeleportId(null);setActionLabel('');return}
     setSelectedId(token.id);setTeleportId(token.id);setActionLabel('Clique no destino do mapa para teleportar')
   }
+  // Converte o ponto do ponteiro em coordenadas percentuais sem deixar o sprite sair do tabuleiro.
+  function boundedPosition(clientX, clientY, tokenId) {
+    const r = board.current.getBoundingClientRect()
+    const tokenEl = board.current.querySelector(`[data-token-id="${tokenId}"]`)
+    const tokenRect = tokenEl?.getBoundingClientRect()
+    const halfW = tokenRect ? tokenRect.width / 2 : 50
+    const halfH = tokenRect ? tokenRect.height / 2 : 78
+    const px = Math.max(halfW, Math.min(r.width - halfW, clientX - r.left))
+    const py = Math.max(halfH, Math.min(r.height - halfH, clientY - r.top))
+    return {
+      x: Math.max(0, Math.min(100, px / r.width * 100)),
+      y: Math.max(0, Math.min(100, py / r.height * 100))
+    }
+  }
+
   async function boardClick(e) {
     if (e.target.closest('.combat-token') || !board.current) return
     const r=board.current.getBoundingClientRect()
-    const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100))
-    const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100))
+    const rawX=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100))
+    const rawY=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100))
 
     if (missileId) {
+      const x=rawX, y=rawY
       const next=[...missileTargets,{x,y}]
       setMissileTargets(next)
       setExplosions(old=>[...old,{id:`${Date.now()}-${old.length}-${Math.random()}`,x,y}])
@@ -106,10 +122,12 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
 
     if (!teleportId) return
     const token=tokens.find(t=>t.id===teleportId); if(!token)return
+    const bounded=boundedPosition(e.clientX,e.clientY,token.id)
+    const x=bounded.x, y=bounded.y
     setSaving(true); await onMoveToken(token.id,x,y); setSaving(false); setPose(token.id,'teleport'); setSelectedId(token.id); setTeleportId(null); setActionLabel('Teleporte realizado')
   }
   function startDrag(e,t) { if(!isMaster||teleportId||missileId)return; e.preventDefault();e.stopPropagation();setSelectedId(t.id);drag.current={id:t.id,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};e.currentTarget.setPointerCapture?.(e.pointerId) }
-  function moveDrag(e) { const d=drag.current;if(!d||!board.current)return;const r=board.current.getBoundingClientRect();if(Math.abs(e.clientX-d.x)+Math.abs(e.clientY-d.y)>3)d.moved=true;if(!d.moved)return;const dx=e.clientX-d.lastX;if(Math.abs(dx)>1)setPose(d.id,dx<0?'left':'right');const x=Math.max(1,Math.min(99,(e.clientX-r.left)/r.width*100));const y=Math.max(1,Math.min(99,(e.clientY-r.top)/r.height*100));d.px=x;d.py=y;d.lastX=e.clientX;d.lastY=e.clientY;onMoveToken(d.id,x,y,false) }
+  function moveDrag(e) { const d=drag.current;if(!d||!board.current)return;const r=board.current.getBoundingClientRect();if(Math.abs(e.clientX-d.x)+Math.abs(e.clientY-d.y)>3)d.moved=true;if(!d.moved)return;const dx=e.clientX-d.lastX;if(Math.abs(dx)>1)setPose(d.id,dx<0?'left':'right');const bounded=boundedPosition(e.clientX,e.clientY,d.id);const x=bounded.x;const y=bounded.y;d.px=x;d.py=y;d.lastX=e.clientX;d.lastY=e.clientY;onMoveToken(d.id,x,y,false) }
   async function endDrag(){const d=drag.current;if(!d)return;drag.current=null;if(d.moved){setSaving(true);await onMoveToken(d.id,d.px,d.py,true);setSaving(false);setPose(d.id,'idle')}}
 
   return <section className="combat-board-page">
@@ -117,7 +135,7 @@ export default function CombatBoard({ scene, tokens, isMaster, onAddCharacter, o
     <div className="combat-board-layout">
       <div ref={board} className={`combat-board ${teleportId?'teleport-target':''} ${missileId?'missile-target':''}`} style={{backgroundImage:`linear-gradient(#05080e12,#05080e22),url("${scene.image_url}")`}} onClick={boardClick} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
         {explosions.map((blast,i)=><img key={blast.id} className="combat-missile-explosion" src="/characters/iron-man/missile-explosion.png" alt="Explosão de míssil" style={{left:`${blast.x}%`,top:`${blast.y}%`}} />)}
-        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${['Homem de Ferro','Noturno','Homem-Aranha','Doutor Estranho'].includes(t.name)?'animated-character':''} ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':scales[t.id] ?? 1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();if(missileId||teleportId)return;setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
+        {tokens.map(t=>{const c=getCharacter(t);return <button key={t.id} className={`combat-token ${['Homem de Ferro','Noturno','Homem-Aranha','Doutor Estranho'].includes(t.name)?'animated-character':''} ${selected?.id===t.id?'selected':''} ${teleportId===t.id?'teleport-active':''}`} data-token-id={t.id} style={{left:`${t.x}%`,top:`${t.y}%`,'--token-scale':scales[t.id] ?? 1}} onPointerDown={e=>startDrag(e,t)} onClick={e=>{e.stopPropagation();if(missileId||teleportId)return;setSelectedId(t.id);if(teleportId===t.id){setTeleportId(null);setActionLabel('')}}} title={t.name}>
           {c?<img src={srcFor(t)} alt={t.name} draggable="false"/>:<span className="combat-token-fallback">{t.emoji||'♟'}</span>}<small>{t.name}</small>
         </button>})}
         {!tokens.length&&<div className="combat-empty">Adicione personagens para começar.</div>}
